@@ -1,5 +1,3 @@
-#pragma once
-
 #include "BoxGeometry.h"
 
 BoxGeometry::BoxGeometry(float _width, float _height, float _depth)

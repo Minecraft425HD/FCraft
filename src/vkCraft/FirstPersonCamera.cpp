@@ -1,5 +1,3 @@
-#pragma once
-
 #include "FirstPersonCamera.h"
 
 FirstPersonCamera::FirstPersonCamera()
