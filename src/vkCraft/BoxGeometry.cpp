@@ -71,7 +71,7 @@ void BoxGeometry::generate()
 		20, 22, 23, 20, 23, 21
 	};
 
-	for (int i = 0; i < vertices.size(); i++)
+	for (size_t i = 0; i < vertices.size(); i++)
 	{
 		vertices[i].pos.x *= width / 2.0;
 		vertices[i].pos.y *= height / 2.0;
