@@ -93,7 +93,7 @@ void FirstPersonCamera::update(GLFWwindow *window, double time)
 	}
 
 	//Limit vertical orientation to avoid gimbal lock at poles
-	const float halfPi = glm::half_pi<float>();
+	const double halfPi = glm::half_pi<double>();
 	if (orientation.y < -halfPi)
 	{
 		orientation.y = -halfPi;
@@ -108,8 +108,8 @@ void FirstPersonCamera::update(GLFWwindow *window, double time)
 
 void FirstPersonCamera::updateMatrix()
 {
-	matrix = glm::translate(glm::mat4(1.0f), position);
-	matrix = glm::rotate(matrix, orientation.x, glm::vec3(0.0f, 1.0f, 0.0f));
-	matrix = glm::rotate(matrix, orientation.y, glm::vec3(1.0f, 0.0f, 0.0f));
+	matrix = glm::translate(glm::mat4(1.0f), glm::vec3(position));
+	matrix = glm::rotate(matrix, (float)orientation.x, glm::vec3(0.0f, 1.0f, 0.0f));
+	matrix = glm::rotate(matrix, (float)orientation.y, glm::vec3(1.0f, 0.0f, 0.0f));
 	matrix = glm::inverse(matrix);
 }

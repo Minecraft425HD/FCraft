@@ -13,7 +13,7 @@ ChunkNode::ChunkNode(glm::ivec3 _index, int _seed)
 void ChunkNode::getNodes(std::vector<ChunkNode*> *nodes, int recursive)
 {
 	bool found = false;
-	for (unsigned int i = 0; i < nodes->size(); i++)
+	for (size_t i = 0; i < nodes->size(); i++)
 	{
 		if ((*nodes)[i]->index == index)
 		{
@@ -55,7 +55,7 @@ void ChunkNode::getGeometries(std::vector<Geometry*> *geometries, ChunkWorld *wo
 		generateGeometry(world);
 	}
 
-	//Check if geometries contains geometry, it it does not add new
+	//Check if geometries contains geometry — if it does not, add new
 	if (std::find(geometries->begin(), geometries->end(), geometry) == geometries->end())
 	{
 		geometries->push_back(geometry);
@@ -202,7 +202,7 @@ ChunkNode* ChunkNode::searchNode(glm::ivec3 index, std::vector<ChunkNode*> *node
 	nodes->push_back(this);
 
 	//Check if it is one of its neighbors
-	for (unsigned int i = 0; i < 6; i++)
+	for (size_t i = 0; i < 6; i++)
 	{
 		if (neighbors[i] != nullptr && neighbors[i]->index == index)
 		{
@@ -211,7 +211,7 @@ ChunkNode* ChunkNode::searchNode(glm::ivec3 index, std::vector<ChunkNode*> *node
 	}
 
 	//Recursively search neighbors
-	for (unsigned int i = 0; i < 6; i++)
+	for (size_t i = 0; i < 6; i++)
 	{
 		if (neighbors[i] != nullptr)
 		{
@@ -277,9 +277,9 @@ void ChunkNode::dispose(VkDevice &device)
 
 	for (unsigned int i = 0; i < 6; i++)
 	{
-		if (neighbors[i] != nullptr && neighbors[i]->state > DATA)
+		if (neighbors[i] != nullptr)
 		{
-			// Null the back-pointer before deleting to prevent use-after-free.
+			// Null the back-pointer before disposing to prevent use-after-free.
 			// Neighbor directions are paired: LEFT(0)<->RIGHT(1), FRONT(2)<->BACK(3), UP(4)<->DOWN(5)
 			int opposite = i ^ 1;
 			neighbors[i]->neighbors[opposite] = nullptr;

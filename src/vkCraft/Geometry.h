@@ -2,6 +2,10 @@
 
 #include <vector>
 
+#define GLM_FORCE_RADIANS
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#include <glm/glm.hpp>
+
 #include "Vertex.h"
 #include "Device.h"
 #include "BufferUtils.h"
@@ -21,6 +25,11 @@ public:
 	std::vector<uint32_t> indices;
 	VkBuffer indexBuffer = VK_NULL_HANDLE;
 	VkDeviceMemory indexBufferMemory = VK_NULL_HANDLE;
+
+	/**
+	 * Virtual destructor — required for safe polymorphic deletion.
+	 */
+	virtual ~Geometry() = default;
 
 	/**
 	 * Method to generate the geometry index and vertex data.

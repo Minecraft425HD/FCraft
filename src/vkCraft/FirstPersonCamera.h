@@ -17,7 +17,9 @@ class FirstPersonCamera : public Camera
 public:
 	glm::dvec2 last = { 0.0, 0.0 };
 	glm::dvec2 delta = { 0.0, 0.0 };
-	glm::vec3 orientation = { 0.0f, 0.0f, 0.0f };
+
+	// dvec3 matches the double-precision arithmetic used in update() for lookSpeed/delta
+	glm::dvec3 orientation = { 0.0, 0.0, 0.0 };
 
 	/**
 	 * Tracks whether last cursor position has been initialized.
