@@ -32,7 +32,7 @@ public:
 	static const int LAVA = 6;
 	static const int CLOUD = 7;
 
-	//Fooliage
+	//Foliage
 	static const int FLOWER_RED = 500;
 	static const int FLOWER_YELLOW = 501;
 	static const int BIRCH = 502;
@@ -65,11 +65,11 @@ public:
 	void generate(int seed);
 
 	/**
-	* Here we get how terrain at X, Y is high. zoomget is only for some testing reasons.
+	* Here we get how terrain at X, Y is high.
 	* Here you can edit maximum and minimum level of height.
 	* Also here you pass seed. It's int.
 	*/
-	int getHeight(int x, int y, int seed, double zoomget = 150);
+	int getHeight(int x, int y, int seed, double noiseScale = 150);
 
 	/**
 	 * Interpolate values.
@@ -86,7 +86,7 @@ public:
 	/**
 	 * Here we get what kind of block it is.
 	 * z is which block we are currently in column.
-	 * height is height of block at this collumn.
+	 * height is height of block at this column.
 	 */
 	int getBlock(int z, int height);
 };

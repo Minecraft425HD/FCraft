@@ -41,7 +41,11 @@ public:
 	const int CONCURRENT_FRAMES = 1;
 
 	//Validation layer control
+#ifdef NDEBUG
+	const bool ENABLE_VALIDATION_LAYERS = false;
+#else
 	const bool ENABLE_VALIDATION_LAYERS = true;
+#endif
 
 	//Vulkan context and window
 	GLFWwindow *window;
@@ -91,7 +95,7 @@ public:
 	VkDescriptorPool descriptorPool;
 	VkDescriptorSet descriptorSet;
 
-	//Syncronization semaphores (one for each concurrent frame)
+	//Synchronization semaphores (one for each concurrent frame)
 	std::vector<VkSemaphore> imageAvailableSemaphores;
 	std::vector<VkSemaphore> renderFinishedSemaphores;
 	std::vector<VkFence> inFlightFences;
@@ -100,14 +104,16 @@ public:
 	//Object3D and camera
 	Object3D model;
 	FirstPersonCamera camera;
-	glm::ivec3 cameraIndex = { 1, 2, 3 };
+	glm::ivec3 cameraIndex = { 0, 0, 0 };
 	UniformBufferObject uniformBuf;
 	double time, delta;
 
-	ChunkWorld world = ChunkWorld(349995);
+	const int WORLD_SEED = 349995;
+	const int RENDER_DISTANCE = 5;
+	ChunkWorld world = ChunkWorld(WORLD_SEED);
 
 	/** 
-	 * Use lugarG validation layers provided by the SDK.
+	 * Use LunarG validation layers provided by the SDK.
 	 */
 	const std::vector<const char*> validationLayers =
 	{
@@ -155,7 +161,7 @@ public:
 	void initialize();
 
 	/**
-	* Recreate the hole swap chain.
+	* Recreate the whole swap chain.
 	*/
 	void recreateSwapChain();
 
@@ -165,7 +171,7 @@ public:
 	void recreateRenderingCommandBuffers();
 
 	/**
-	 * Cleanup swapchain elements. Can be used to clear the swapchain before recreating it using a diferent layout.
+	 * Cleanup swapchain elements. Can be used to clear the swapchain before recreating it using a different layout.
 	 */
 	void cleanupSwapChain();
 
@@ -190,7 +196,7 @@ public:
 	void createSurface();
 
 	/**
-	 * Choose a appropiate physical device to be used.
+	 * Choose an appropriate physical device to be used.
 	 */
 	void pickPhysicalDevice();
 
@@ -220,7 +226,7 @@ public:
 	void createDescriptorSetLayout();
 
 	/** 
-	 * Initializer graphics pipeline, load shaders, configure vertex format and rendering steps.
+	 * Initialize graphics pipeline, load shaders, configure vertex format and rendering steps.
 	 */
 	void createGraphicsPipeline();
 
@@ -294,7 +300,7 @@ public:
 	void createRenderingCommandBuffers();
 
 	/**
-	 * Create syncronization semaphores and fences
+	 * Create synchronization semaphores and fences
 	 */
 	void createSyncObjects();
 
