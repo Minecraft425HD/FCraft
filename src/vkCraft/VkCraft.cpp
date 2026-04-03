@@ -476,10 +476,14 @@ void VkCraft::createLogicalDevice()
 	QueueFamilyIndices indices = device.getQueueFamilyIndices(surface);
 
 	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-	std::set<int> uniqueQueueFamilies = { indices.graphicsFamily, indices.presentFamily };
+	// Use uint32_t to match the type of graphicsFamily / presentFamily
+	std::set<uint32_t> uniqueQueueFamilies = {
+		static_cast<uint32_t>(indices.graphicsFamily),
+		static_cast<uint32_t>(indices.presentFamily)
+	};
 
 	float queuePriority = 1.0f;
-	for (int queueFamily : uniqueQueueFamilies)
+	for (uint32_t queueFamily : uniqueQueueFamilies)
 	{
 		VkDeviceQueueCreateInfo queueCreateInfo = {};
 		queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
@@ -1470,7 +1474,7 @@ SwapChainSupportDetails VkCraft::querySwapChainSupport(VkPhysicalDevice device)
 	return details;
 }
 
-VBOOL VkCraft::debugCallback(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objType, uint64_t obj, size_t location, int32_t code, const char* layerPrefix, const char* msg, void* userData)
+VkBool32 VkCraft::debugCallback(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objType, uint64_t obj, size_t location, int32_t code, const char* layerPrefix, const char* msg, void* userData)
 {
 	std::cerr << "vkCraft: Validation layer: " << msg << std::endl;
 	return VK_FALSE;
