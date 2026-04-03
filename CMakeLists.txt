@@ -1,9 +1,31 @@
-cmake_minimum_required (VERSION 3.8)
+cmake_minimum_required(VERSION 3.10...3.27)
 
-project (vkCraft)
+project(vkCraft)
 
-find_package (glfw3 REQUIRED)
-find_package (Vulkan REQUIRED)
+find_package(glfw3 REQUIRED)
+find_package(Vulkan REQUIRED)
+
+# ---------------------------------------------------------------------------
+# Homebrew prefix detection (macOS Apple Silicon & Intel)
+# ---------------------------------------------------------------------------
+if(APPLE)
+  # Prefer an explicit HOMEBREW_PREFIX env-var; fall back to arm64 then x86 default
+  if(DEFINED ENV{HOMEBREW_PREFIX})
+    set(BREW_PREFIX "$ENV{HOMEBREW_PREFIX}")
+  elseif(EXISTS "/opt/homebrew")
+    set(BREW_PREFIX "/opt/homebrew")
+  else()
+    set(BREW_PREFIX "/usr/local")
+  endif()
+
+  # glfw
+  list(APPEND CMAKE_PREFIX_PATH "${BREW_PREFIX}/opt/glfw")
+  # glm  (header-only — just needs the include dir)
+  set(GLM_INCLUDE_DIR "${BREW_PREFIX}/include")
+  # tinyobjloader
+  set(TINYOBJ_INCLUDE_DIR "${BREW_PREFIX}/include")
+  set(TINYOBJ_LIB_DIR     "${BREW_PREFIX}/lib")
+endif()
 
 set(SOURCE_FILES
     src/vkCraft/BoxGeometry.cpp
@@ -49,33 +71,48 @@ set(HEADER_FILES
     src/vkCraft/VkCraft.h
 )
 
-include_directories(src/include 
-  ${glfw_INCLUDE_DIRS} 
+include_directories(
+    src/include
+    ${GLFW_INCLUDE_DIRS}
+    ${GLM_INCLUDE_DIR}
+    ${TINYOBJ_INCLUDE_DIR}
+    ${Vulkan_INCLUDE_DIRS}
 )
 
 add_executable(vkCraft ${SOURCE_FILES})
 add_library(libvkCraft SHARED ${SOURCE_FILES})
 set_target_properties(libvkCraft PROPERTIES OUTPUT_NAME "vkCraft")
 
-target_link_libraries(vkCraft 
-  glfw3
-  tinyobjloader
-  ${Vulkan_LIBRARIES}
+# tinyobjloader: try find_package first, fall back to raw link path
+find_library(TINYOBJ_LIB tinyobjloader HINTS ${TINYOBJ_LIB_DIR})
+if(TINYOBJ_LIB)
+  set(TINYOBJ_LINK ${TINYOBJ_LIB})
+else()
+  set(TINYOBJ_LINK tinyobjloader)
+endif()
+
+target_link_libraries(vkCraft
+    glfw
+    ${TINYOBJ_LINK}
+    ${Vulkan_LIBRARIES}
+)
+
+target_link_libraries(libvkCraft
+    glfw
+    ${TINYOBJ_LINK}
+    ${Vulkan_LIBRARIES}
 )
 
 add_custom_command(TARGET vkCraft
-  POST_BUILD
-  COMMAND cd ${CMAKE_SOURCE_DIR}/src/scripts && python3 compile_shaders.py
+    POST_BUILD
+    COMMAND cd ${CMAKE_SOURCE_DIR}/src/scripts && python3 compile_shaders.py
 )
 
 add_custom_command(TARGET vkCraft
-  POST_BUILD
-  COMMAND cp -r ${CMAKE_SOURCE_DIR}/src/vkCraft/texture ${CMAKE_CURRENT_BINARY_DIR}/texture
+    POST_BUILD
+    COMMAND cp -r ${CMAKE_SOURCE_DIR}/src/vkCraft/texture ${CMAKE_CURRENT_BINARY_DIR}/texture
 )
 
-install(TARGETS vkCraft 
-	DESTINATION bin)
-install(TARGETS libvkCraft
-	DESTINATION lib)
-install(FILES ${HEADER_FILES} 
-	DESTINATION include/vkCraft)
+install(TARGETS vkCraft      DESTINATION bin)
+install(TARGETS libvkCraft   DESTINATION lib)
+install(FILES ${HEADER_FILES} DESTINATION include/vkCraft)
