@@ -123,7 +123,7 @@ void VkCraft::render()
 	//Wait stages
 	VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 
-	//Submit information (wich semaphores to wait for, wait stages etc)
+	//Submit information (which semaphores to wait for, wait stages etc)
 	VkSubmitInfo submitInfo = {};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 	submitInfo.waitSemaphoreCount = 1;
@@ -718,7 +718,7 @@ void VkCraft::createGraphicsPipeline()
 	vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
 	vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
 
-	//How to asssembly vertex data
+	//How to assembly vertex data
 	VkPipelineInputAssemblyStateCreateInfo inputAssembly = {};
 	inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
 	inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST; //VK_PRIMITIVE_TOPOLOGY_LINE_LIST 
@@ -878,7 +878,7 @@ void VkCraft::createGeometryBuffers(Geometry *geometry)
 	VkBuffer indexStagingBuffer, vertexStagingBuffer;
 	VkDeviceMemory indexStagingBufferMemory, vertexStagingBufferMemory;
 
-	//Create CPU buffers
+	//Create CPU staging buffers
 	BufferUtils::createBuffer(device, vertexBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, vertexStagingBuffer, vertexStagingBufferMemory);
 	BufferUtils::createBuffer(device, indexBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, indexStagingBuffer, indexStagingBufferMemory);
 
@@ -897,11 +897,11 @@ void VkCraft::createGeometryBuffers(Geometry *geometry)
 	BufferUtils::createBuffer(device, vertexBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, geometry->vertexBuffer, geometry->vertexBufferMemory);
 	BufferUtils::createBuffer(device, indexBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, geometry->indexBuffer, geometry->indexBufferMemory);
 
-	//Copy from CPU buffer to GPU buffer
+	//Copy from CPU staging buffer to GPU buffer
 	BufferUtils::copyBuffer(&device, &graphicsQueue, &commandPool, vertexStagingBuffer, geometry->vertexBuffer, vertexBufferSize);
 	BufferUtils::copyBuffer(&device, &graphicsQueue, &commandPool, indexStagingBuffer, geometry->indexBuffer, indexBufferSize);
 
-	//Clean the stagging (CPU) buffer
+	//Clean the staging (CPU) buffers
 	vkDestroyBuffer(device.logical, vertexStagingBuffer, nullptr);
 	vkFreeMemory(device.logical, vertexStagingBufferMemory, nullptr);
 	vkDestroyBuffer(device.logical, indexStagingBuffer, nullptr);
@@ -1088,7 +1088,7 @@ void VkCraft::createTextureImage(const char *fname)
 		throw std::runtime_error("vkCraft: Failed to load texture image!");
 	}
 
-	//Create buffer to transfer to GPU memory
+	//Create staging buffer to transfer to GPU memory
 	VkBuffer stagingBuffer;
 	VkDeviceMemory stagingBufferMemory;
 	BufferUtils::createBuffer(device, imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
@@ -1098,7 +1098,7 @@ void VkCraft::createTextureImage(const char *fname)
 	vkMapMemory(device.logical, stagingBufferMemory, 0, imageSize, 0, &data);
 	memcpy(data, pixels, static_cast<size_t>(imageSize));
 
-	//Clear stagging buffer and image data
+	//Clear staging buffer and image data
 	vkUnmapMemory(device.logical, stagingBufferMemory);
 	stbi_image_free(pixels);
 
@@ -1120,432 +1120,4 @@ void VkCraft::createTextureImage(const char *fname)
 
 	//Create texture view
 	texture.imageView = createImageView(texture.image, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT);
-}
-
-VkImageView VkCraft::createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags)
-{
-	VkImageViewCreateInfo viewInfo = {};
-	viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-	viewInfo.image = image;
-	viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-	viewInfo.format = format;
-	viewInfo.subresourceRange.aspectMask = aspectFlags;
-	viewInfo.subresourceRange.baseMipLevel = 0;
-	viewInfo.subresourceRange.levelCount = 1;
-	viewInfo.subresourceRange.baseArrayLayer = 0;
-	viewInfo.subresourceRange.layerCount = 1;
-
-	VkImageView imageView;
-	if (vkCreateImageView(device.logical, &viewInfo, nullptr, &imageView) != VK_SUCCESS)
-	{
-		throw std::runtime_error("vkCraft: failed to create texture image view!");
-	}
-
-	return imageView;
-}
-
-void VkCraft::createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory)
-{
-	//Create a vulkan image with metadata
-	VkImageCreateInfo imageInfo = {};
-	imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-	imageInfo.imageType = VK_IMAGE_TYPE_2D;
-	imageInfo.extent.width = width;
-	imageInfo.extent.height = height;
-	imageInfo.extent.depth = 1;
-	imageInfo.mipLevels = 1;
-	imageInfo.arrayLayers = 1;
-	imageInfo.format = format;
-	imageInfo.tiling = tiling;
-	imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	imageInfo.usage = usage;
-	imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-	imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-	if (vkCreateImage(device.logical, &imageInfo, nullptr, &image) != VK_SUCCESS)
-	{
-		throw std::runtime_error("vkCraft: Failed to create image!");
-	}
-
-	//Allocate memory for the texture
-	VkMemoryRequirements memRequirements;
-	vkGetImageMemoryRequirements(device.logical, image, &memRequirements);
-
-	VkMemoryAllocateInfo allocInfo = {};
-	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-	allocInfo.allocationSize = memRequirements.size;
-	allocInfo.memoryTypeIndex = device.findMemoryType(memRequirements.memoryTypeBits, properties);
-
-	if (vkAllocateMemory(device.logical, &allocInfo, nullptr, &imageMemory) != VK_SUCCESS)
-	{
-		throw std::runtime_error("vkCraft: Failed to allocate image memory!");
-	}
-
-	vkBindImageMemory(device.logical, image, imageMemory, 0);
-}
-
-void VkCraft::createDepthResources()
-{
-	VkFormat depthFormat = findDepthFormat();
-
-	createImage(swapChainExtent.width, swapChainExtent.height, depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depth.image, depth.imageMemory);
-	depth.imageView = createImageView(depth.image, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
-
-	transitionImageLayout(depth.image, depthFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
-}
-
-bool VkCraft::hasStencilComponent(VkFormat format)
-{
-	return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
-}
-
-VkFormat VkCraft::findDepthFormat()
-{
-	return findSupportedFormat({ VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT }, VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
-}
-
-VkFormat VkCraft::findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features)
-{
-	for (VkFormat format : candidates)
-	{
-		VkFormatProperties props;
-		vkGetPhysicalDeviceFormatProperties(device.physical, format, &props);
-
-		if (tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & features) == features)
-		{
-			return format;
-		}
-		else if (tiling == VK_IMAGE_TILING_OPTIMAL && (props.optimalTilingFeatures & features) == features)
-		{
-			return format;
-		}
-	}
-
-	throw std::runtime_error("vkCraft: Failed to find supported format!");
-}
-
-void VkCraft::createRenderingCommandBuffers()
-{
-	//Create a command buffer for each frame buffer
-	renderCommandBuffers.resize(swapChainFramebuffers.size());
-
-	VkCommandBufferAllocateInfo allocInfo = {};
-	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	allocInfo.commandPool = renderCommandPool;
-	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	allocInfo.commandBufferCount = (uint32_t)renderCommandBuffers.size();
-
-	if (vkAllocateCommandBuffers(device.logical, &allocInfo, renderCommandBuffers.data()) != VK_SUCCESS)
-	{
-		throw std::runtime_error("vkCraft: Failed to allocate command buffers");
-	}
-
-	for (unsigned int i = 0; i < renderCommandBuffers.size(); i++)
-	{
-		VkCommandBufferBeginInfo beginInfo = {};
-		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
-
-		if (vkBeginCommandBuffer(renderCommandBuffers[i], &beginInfo) != VK_SUCCESS)
-		{
-			throw std::runtime_error("vkCraft: Failed to begin recording command buffer");
-		}
-
-		std::array<VkClearValue, 2> clearValues = {};
-		clearValues[0].color = { 0.4f, 0.6f, 1.0f, 1.0f };
-		clearValues[1].depthStencil = { 1.0f, 0 };
-
-		//Render initialization
-		VkRenderPassBeginInfo renderPassInfo = {};
-		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		renderPassInfo.renderPass = renderPass;
-		renderPassInfo.framebuffer = swapChainFramebuffers[i];
-		renderPassInfo.renderArea.offset = { 0, 0 };
-		renderPassInfo.renderArea.extent = swapChainExtent;
-		renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
-		renderPassInfo.pClearValues = clearValues.data();
-
-		//Start rendering
-		vkCmdBeginRenderPass(renderCommandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-		vkCmdBindPipeline(renderCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
-
-		VkDeviceSize offsets[] = { 0 };
-
-		//Chunk geometry
-		for (int j = 0; j < world.geometries.size(); j++)
-		{
-			if (world.geometries[j]->hasBuffers())
-			{
-				vkCmdBindDescriptorSets(renderCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
-				vkCmdBindVertexBuffers(renderCommandBuffers[i], 0, 1, &(world.geometries[j]->vertexBuffer), offsets);
-				vkCmdBindIndexBuffer(renderCommandBuffers[i], world.geometries[j]->indexBuffer, 0, VK_INDEX_TYPE_UINT32);
-				vkCmdDrawIndexed(renderCommandBuffers[i], static_cast<uint32_t>(world.geometries[j]->indices.size()), 1, 0, 0, 0);
-			}
-		}
-		
-		//End rendering
-		vkCmdEndRenderPass(renderCommandBuffers[i]);
-
-		if (vkEndCommandBuffer(renderCommandBuffers[i]) != VK_SUCCESS)
-		{
-			throw std::runtime_error("vkCraft: Failed to record command buffer");
-		}
-	}
-}
-
-void VkCraft::createSyncObjects()
-{
-	imageAvailableSemaphores.resize(CONCURRENT_FRAMES);
-	renderFinishedSemaphores.resize(CONCURRENT_FRAMES);
-	inFlightFences.resize(CONCURRENT_FRAMES);
-
-	VkSemaphoreCreateInfo semaphoreInfo = {};
-	semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-
-	VkFenceCreateInfo fenceInfo = {};
-	fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-	fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-
-	for (uint32_t i = 0; i < CONCURRENT_FRAMES; i++)
-	{
-		if (vkCreateSemaphore(device.logical, &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) != VK_SUCCESS ||
-			vkCreateSemaphore(device.logical, &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) != VK_SUCCESS ||
-			vkCreateFence(device.logical, &fenceInfo, nullptr, &inFlightFences[i]) != VK_SUCCESS)
-		{
-			throw std::runtime_error("vkCraft: Failed to create semaphores and fences");
-		}
-	}
-}
-
-VkCommandBuffer VkCraft::beginSingleTimeCommands()
-{
-	VkCommandBufferAllocateInfo allocInfo = {};
-	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	allocInfo.commandPool = commandPool;
-	allocInfo.commandBufferCount = 1;
-
-	VkCommandBuffer commandBuffer;
-	vkAllocateCommandBuffers(device.logical, &allocInfo, &commandBuffer);
-
-	VkCommandBufferBeginInfo beginInfo = {};
-	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-
-	vkBeginCommandBuffer(commandBuffer, &beginInfo);
-
-	return commandBuffer;
-}
-
-void VkCraft::endSingleTimeCommands(VkCommandBuffer commandBuffer)
-{
-	vkEndCommandBuffer(commandBuffer);
-
-	VkSubmitInfo submitInfo = {};
-	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &commandBuffer;
-
-	vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
-	vkQueueWaitIdle(graphicsQueue);
-
-	vkFreeCommandBuffers(device.logical, commandPool, 1, &commandBuffer);
-}
-
-VkShaderModule VkCraft::createShaderModule(const std::vector<char>& code)
-{
-	VkShaderModuleCreateInfo createInfo = {};
-	createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-	createInfo.codeSize = code.size();
-	createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
-
-	VkShaderModule shaderModule;
-
-	if (vkCreateShaderModule(device.logical, &createInfo, nullptr, &shaderModule) != VK_SUCCESS)
-	{
-		throw std::runtime_error("vkCraft: Failed to create shader module");
-	}
-
-	return shaderModule;
-}
-
-bool VkCraft::isPhysicalDeviceSuitable(VkPhysicalDevice physical)
-{
-	//Check device extensions
-	bool extensionsSupported = checkDeviceExtensionSupport(physical);
-
-	//Check swap chain
-	bool swapChainAdequate = false;
-	if (extensionsSupported)
-	{
-		SwapChainSupportDetails swapChainSupport = querySwapChainSupport(physical);
-		swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
-	}
-
-	//Device device.physical features
-	VkPhysicalDeviceFeatures supportedFeatures;
-	vkGetPhysicalDeviceFeatures(physical, &supportedFeatures);
-
-	Device device = { physical };
-
-	//Get queue family indices
-	QueueFamilyIndices indices = device.getQueueFamilyIndices(surface);
-
-	return indices.isComplete() && extensionsSupported && swapChainAdequate && supportedFeatures.samplerAnisotropy;
-}
-
-bool VkCraft::checkDeviceExtensionSupport(VkPhysicalDevice physical)
-{
-	uint32_t extensionCount;
-	vkEnumerateDeviceExtensionProperties(physical, nullptr, &extensionCount, nullptr);
-
-	std::vector<VkExtensionProperties> availableExtensions(extensionCount);
-	vkEnumerateDeviceExtensionProperties(physical, nullptr, &extensionCount, availableExtensions.data());
-
-	std::set<std::string> requiredExtensions(deviceExtensions.begin(), deviceExtensions.end());
-
-	//Errase required extensions from list
-	for (VkExtensionProperties extension : availableExtensions)
-	{
-		requiredExtensions.erase(extension.extensionName);
-	}
-
-	//If all required extensions were found the list is empty
-	return requiredExtensions.empty();
-}
-
-VkSurfaceFormatKHR VkCraft::chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats)
-{
-	if (availableFormats.size() == 1 && availableFormats[0].format == VK_FORMAT_UNDEFINED)
-	{
-		return { VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR };
-	}
-
-	for (VkSurfaceFormatKHR availableFormat : availableFormats)
-	{
-		if (availableFormat.format == VK_FORMAT_B8G8R8A8_UNORM && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
-		{
-			return availableFormat;
-		}
-	}
-
-	return availableFormats[0];
-}
-
-VkPresentModeKHR VkCraft::chooseSwapPresentMode(const std::vector<VkPresentModeKHR> availablePresentModes)
-{
-	VkPresentModeKHR bestMode = VK_PRESENT_MODE_FIFO_KHR;
-
-	for (VkPresentModeKHR availablePresentMode : availablePresentModes)
-	{
-		if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR)
-		{
-			return availablePresentMode;
-		}
-		else if (availablePresentMode == VK_PRESENT_MODE_IMMEDIATE_KHR)
-		{
-			bestMode = availablePresentMode;
-		}
-	}
-
-	return bestMode;
-}
-
-VkExtent2D VkCraft::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities)
-{
-	if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max())
-	{
-		return capabilities.currentExtent;
-	}
-	else
-	{
-		int width, height;
-		glfwGetWindowSize(window, &width, &height);
-
-		VkExtent2D actualExtent = { (uint32_t)width, (uint32_t)height };
-		actualExtent.width = std::max(capabilities.minImageExtent.width, std::min(capabilities.maxImageExtent.width, actualExtent.width));
-		actualExtent.height = std::max(capabilities.minImageExtent.height, std::min(capabilities.maxImageExtent.height, actualExtent.height));
-
-		return actualExtent;
-	}
-}
-
-SwapChainSupportDetails VkCraft::querySwapChainSupport(VkPhysicalDevice physical)
-{
-	SwapChainSupportDetails details;
-
-	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physical, surface, &details.capabilities);
-
-	//Check format modes
-	uint32_t formatCount;
-	vkGetPhysicalDeviceSurfaceFormatsKHR(physical, surface, &formatCount, nullptr);
-	if (formatCount != 0)
-	{
-		details.formats.resize(formatCount);
-		vkGetPhysicalDeviceSurfaceFormatsKHR(physical, surface, &formatCount, details.formats.data());
-	}
-
-	//Check presentation modes
-	uint32_t presentModeCount;
-	vkGetPhysicalDeviceSurfacePresentModesKHR(physical, surface, &presentModeCount, nullptr);
-	if (presentModeCount != 0)
-	{
-		details.presentModes.resize(presentModeCount);
-		vkGetPhysicalDeviceSurfacePresentModesKHR(physical, surface, &presentModeCount, details.presentModes.data());
-	}
-
-	return details;
-}
-
-std::vector<const char*> VkCraft::getRequiredExtensions()
-{
-	uint32_t glfwExtensionCount = 0;
-	const char** glfwExtensions;
-	glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-
-	std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
-
-	if (ENABLE_VALIDATION_LAYERS)
-	{
-		extensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
-	}
-
-	return extensions;
-}
-
-bool VkCraft::checkValidationLayerSupport()
-{
-	uint32_t layerCount;
-	vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
-
-	std::vector<VkLayerProperties> availableLayers(layerCount);
-	vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
-
-	for (const char* layerName : validationLayers)
-	{
-		bool layerFound = false;
-
-		for (VkLayerProperties layerProperties : availableLayers)
-		{
-			if (strcmp(layerName, layerProperties.layerName) == 0)
-			{
-				layerFound = true;
-				break;
-			}
-		}
-
-		if (!layerFound)
-		{
-			return false;
-		}
-	}
-
-	return true;
-}
-
-VKAPI_ATTR VkBool32 VKAPI_CALL VkCraft::debugCallback(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objType, uint64_t obj, size_t location, int32_t code, const char* layerPrefix, const char* msg, void* userData)
-{
-	std::cerr << "vkCraftVL: " << msg << std::endl;
-
-	return VK_FALSE;
 }
