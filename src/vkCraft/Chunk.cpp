@@ -1,5 +1,3 @@
-#pragma once
-
 #include "Chunk.h"
 
 void Chunk::setIndex(glm::ivec3 _index)
@@ -45,23 +43,23 @@ void Chunk::generate(int seed)
 	}
 }
 
-int Chunk::getHeight(int x, int y, int seed, double zoomget)
+int Chunk::getHeight(int x, int y, int seed, double noiseScale)
 {
 	double frequencyPower = 2.0;
 	double amplitudePower = 0.5;
 
-	double zoom = zoomget;
+	double zoom = noiseScale;
 	double noise = 0;
 
 	int octaves = 6;
 
-	//Loop trough the octaves
+	//Loop through the octaves
 	for (int a = 0; a < octaves - 1; a++)
 	{
 		//Increase the frequency with every loop of the octave.
 		double frequency = pow(frequencyPower, a);
 
-		//Decrese the amplitude with every loop of the octave.
+		//Decrease the amplitude with every loop of the octave.
 		double amplitude = pow(amplitudePower, a);
 
 		//Perlin noise functions. It calculates all our zoom and frequency and amplitude

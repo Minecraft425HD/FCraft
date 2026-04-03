@@ -1,10 +1,9 @@
-#pragma once
-
 #include "ChunkNode.h"
 
 ChunkNode::ChunkNode(glm::ivec3 _index, int _seed)
 {
 	index = _index;
+	seed = _seed;
 	state = UNINITIALIZED;
 	chunk.setIndex(_index);
 	geometry = new ChunkGeometry();
@@ -279,10 +278,11 @@ void ChunkNode::dispose(VkDevice &device)
 
 	for (unsigned int i = 0; i < 6; i++)
 	{
-		if(neighbors[i] != nullptr && neighbors[i]->state > DATA)
+		if (neighbors[i] != nullptr && neighbors[i]->state > DATA)
 		{
 			neighbors[i]->dispose(device);
 			delete neighbors[i];
+			neighbors[i] = nullptr;
 		}
 	}
 }

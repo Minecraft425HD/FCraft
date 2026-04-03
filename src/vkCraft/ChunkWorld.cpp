@@ -1,5 +1,3 @@
-#pragma once
-
 #include "ChunkWorld.h"
 
 ChunkWorld::ChunkWorld(int _seed)
@@ -126,11 +124,16 @@ int ChunkWorld::getBlock(glm::ivec3 position)
 {
 	ChunkNode *node = getChunkNode(getIndex(position));
 
-	return node->chunk.data[position.x % Chunk::SIZE][position.y % Chunk::SIZE][position.z % Chunk::SIZE];
+	int x = ((position.x % Chunk::SIZE) + Chunk::SIZE) % Chunk::SIZE;
+	int y = ((position.y % Chunk::SIZE) + Chunk::SIZE) % Chunk::SIZE;
+	int z = ((position.z % Chunk::SIZE) + Chunk::SIZE) % Chunk::SIZE;
+
+	return node->chunk.data[x][y][z];
 }
 
 void ChunkWorld::dispose(VkDevice &device)
 {
 	root->dispose(device);
 	delete root;
+	root = nullptr;
 }
