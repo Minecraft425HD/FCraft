@@ -1,5 +1,3 @@
-#pragma once
-
 #include "Vertex.h"
 
 VkVertexInputBindingDescription Vertex::getBindingDescription()

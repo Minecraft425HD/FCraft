@@ -1,5 +1,3 @@
-#pragma once
-
 #include "PlaneGeometry.h"
 
 void PlaneGeometry::generate()

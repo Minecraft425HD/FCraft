@@ -14,6 +14,6 @@ public:
 	//Generic buffer creation
 	static void createBuffer(Device device, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
 
-	//Copy the contents of a buffer to another buffer (move to BufferUtils)
+	//Copy the contents of a buffer to another buffer
 	static void copyBuffer(Device *device, VkQueue *graphicsQueue, VkCommandPool *commandPool, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 };

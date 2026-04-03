@@ -1,5 +1,3 @@
-#pragma once
-
 #include "Camera.h"
 
 Camera::Camera(double _fov, double _near, double _far)

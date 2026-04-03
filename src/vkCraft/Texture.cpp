@@ -1,5 +1,3 @@
-#pragma once
-
 #include "Texture.h"
 
 void Texture::createSampler(VkDevice &device, VkSampler &textureSampler)

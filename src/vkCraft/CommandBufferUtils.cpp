@@ -1,5 +1,3 @@
-#pragma once
-
 #include "CommandBufferUtils.h"
 
 VkCommandBuffer CommandBufferUtils::beginSingleTimeCommands(Device *device, VkCommandPool *commandPool)

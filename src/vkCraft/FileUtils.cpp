@@ -1,5 +1,3 @@
-#pragma once
-
 #include "FileUtils.h"
 
 std::vector<char> FileUtils::readFile(const std::string& filename)

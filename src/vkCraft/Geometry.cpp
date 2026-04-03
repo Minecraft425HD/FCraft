@@ -1,5 +1,3 @@
-#pragma once
-
 #include "Geometry.h"
 
 void Geometry::generate(){}
