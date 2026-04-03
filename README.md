@@ -1,4 +1,4 @@
-# vkCraft
+# FCraft
  - Minecraft clone written with C++ and Vulkan
  - Project made as a way of learning the basics about the Vulkan API.
 
