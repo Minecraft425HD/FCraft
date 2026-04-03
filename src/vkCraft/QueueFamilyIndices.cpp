@@ -2,5 +2,5 @@
 
 bool QueueFamilyIndices::isComplete()
 {
-	return graphicsFamily >= 0 && presentFamily >= 0;
+	return graphicsFamily != UINT32_MAX && presentFamily != UINT32_MAX;
 }

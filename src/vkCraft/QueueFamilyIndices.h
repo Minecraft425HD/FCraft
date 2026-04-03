@@ -1,10 +1,12 @@
 #pragma once
 
+#include <cstdint>
+
 class QueueFamilyIndices
 {
 public:
-	int graphicsFamily = -1;
-	int presentFamily = -1;
+	uint32_t graphicsFamily = UINT32_MAX;
+	uint32_t presentFamily = UINT32_MAX;
 
 	bool isComplete();
 };

@@ -13,7 +13,7 @@ public:
 	VkImageView imageView;
 
 	/**
-	 * Magnification iltering configuration.
+	 * Magnification filtering configuration.
 	 */
 	VkFilter magFilter = VK_FILTER_NEAREST; //VK_FILTER_LINEAR | VK_FILTER_NEAREST
 

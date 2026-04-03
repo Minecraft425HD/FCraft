@@ -27,7 +27,7 @@ public:
 	static VkVertexInputBindingDescription getBindingDescription();
 
 	/**
-	 * Get attrubute description to pass information to the shader using correct location.
+	 * Get attribute description to pass information to the shader using correct location.
 	 */
 	static std::array<VkVertexInputAttributeDescription, 3> getAttributeDescriptions();
 };
