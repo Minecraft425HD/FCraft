@@ -1,5 +1,3 @@
-#pragma once
-
 #include "VkCraft.h"
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -68,7 +66,7 @@ void VkCraft::update()
 	{
 		double t = glfwGetTime();
 
-		int distance = 5;
+		int distance = RENDER_DISTANCE;
 		std::vector<Geometry*> geometries = world.getGeometries(camera.position, distance);
 
 		for (int i = 0; i < geometries.size(); i++)
@@ -123,7 +121,7 @@ void VkCraft::render()
 	//Wait stages
 	VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 
-	//Submit information (wich semaphores to wait for, wait stages etc)
+	//Submit information (which semaphores to wait for, wait stages etc)
 	VkSubmitInfo submitInfo = {};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 	submitInfo.waitSemaphoreCount = 1;
@@ -718,7 +716,7 @@ void VkCraft::createGraphicsPipeline()
 	vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
 	vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
 
-	//How to asssembly vertex data
+	//How to assembly vertex data
 	VkPipelineInputAssemblyStateCreateInfo inputAssembly = {};
 	inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
 	inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST; //VK_PRIMITIVE_TOPOLOGY_LINE_LIST 
@@ -901,7 +899,7 @@ void VkCraft::createGeometryBuffers(Geometry *geometry)
 	BufferUtils::copyBuffer(&device, &graphicsQueue, &commandPool, vertexStagingBuffer, geometry->vertexBuffer, vertexBufferSize);
 	BufferUtils::copyBuffer(&device, &graphicsQueue, &commandPool, indexStagingBuffer, geometry->indexBuffer, indexBufferSize);
 
-	//Clean the stagging (CPU) buffer
+	//Clean the staging (CPU) buffer
 	vkDestroyBuffer(device.logical, vertexStagingBuffer, nullptr);
 	vkFreeMemory(device.logical, vertexStagingBufferMemory, nullptr);
 	vkDestroyBuffer(device.logical, indexStagingBuffer, nullptr);
@@ -911,10 +909,6 @@ void VkCraft::createGeometryBuffers(Geometry *geometry)
 
 void VkCraft::createDescriptorPool()
 {
-	VkDescriptorPoolSize poolSize = {};
-	poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	poolSize.descriptorCount = 1;
-
 	std::array<VkDescriptorPoolSize, 2> poolSizes = {};
 
 	poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -952,15 +946,6 @@ void VkCraft::createDescriptorSet()
 	bufferInfo.buffer = uniformBuffer;
 	bufferInfo.offset = 0;
 	bufferInfo.range = sizeof(UniformBufferObject);
-
-	VkWriteDescriptorSet descriptorWrite = {};
-	descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-	descriptorWrite.dstSet = descriptorSet;
-	descriptorWrite.dstBinding = 0;
-	descriptorWrite.dstArrayElement = 0;
-	descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	descriptorWrite.descriptorCount = 1;
-	descriptorWrite.pBufferInfo = &bufferInfo;
 
 	VkDescriptorImageInfo imageInfo = {};
 	imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -1098,7 +1083,7 @@ void VkCraft::createTextureImage(const char *fname)
 	vkMapMemory(device.logical, stagingBufferMemory, 0, imageSize, 0, &data);
 	memcpy(data, pixels, static_cast<size_t>(imageSize));
 
-	//Clear stagging buffer and image data
+	//Clear staging buffer and image data
 	vkUnmapMemory(device.logical, stagingBufferMemory);
 	stbi_image_free(pixels);
 
@@ -1404,7 +1389,7 @@ bool VkCraft::checkDeviceExtensionSupport(VkPhysicalDevice physical)
 
 	std::set<std::string> requiredExtensions(deviceExtensions.begin(), deviceExtensions.end());
 
-	//Errase required extensions from list
+	//Erase required extensions from list
 	for (VkExtensionProperties extension : availableExtensions)
 	{
 		requiredExtensions.erase(extension.extensionName);
