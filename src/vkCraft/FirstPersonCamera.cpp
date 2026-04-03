@@ -1,5 +1,3 @@
-#pragma once
-
 #include "FirstPersonCamera.h"
 
 FirstPersonCamera::FirstPersonCamera()
@@ -12,15 +10,15 @@ void FirstPersonCamera::update(GLFWwindow *window, double time)
 	double moveSpeed = 10.0 * time;
 	double lookSpeed = 1.0 * time;
 
-	double pi = 3.14159265359;
-	double pid2 = pi / 2.0;
+	double pi    = glm::pi<double>();
+	double pid2  = pi / 2.0;
 		
 	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
 	{
 		moveSpeed *= 3.0f;
 	}
 
-	//Camera move
+	// Camera move
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
 	{
 		position.z -= moveSpeed * std::cos(orientation.x);
@@ -32,7 +30,7 @@ void FirstPersonCamera::update(GLFWwindow *window, double time)
 		position.x += moveSpeed * std::sin(orientation.x);
 	}
 
-	float lateral = orientation.x + pid2;
+	float lateral = orientation.x + (float)pid2;
 
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
 	{
@@ -61,14 +59,14 @@ void FirstPersonCamera::update(GLFWwindow *window, double time)
 	last.x = x;
 	last.y = y;
 
-	//Update mouse cursor
+	// Update mouse look
 	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
 	{
 		orientation.x -= delta.x * lookSpeed;
 		orientation.y -= delta.y * lookSpeed;
 	}
 
-	//Camera orientation
+	// Camera orientation via arrow keys
 	if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
 	{
 		orientation.x += lookSpeed;
@@ -85,17 +83,18 @@ void FirstPersonCamera::update(GLFWwindow *window, double time)
 	{
 		orientation.y -= lookSpeed;
 	}
-		
-	//Limit vertical orientation
-	if(orientation.y < -1.57f)
+
+	// Clamp vertical look to ±90°
+	const float pitchLimit = glm::half_pi<float>();
+	if (orientation.y < -pitchLimit)
 	{
-		orientation.y = -1.57f;
+		orientation.y = -pitchLimit;
 	}
-	else if(orientation.y > 1.57f)
+	else if (orientation.y > pitchLimit)
 	{
-		orientation.y = 1.57f;
+		orientation.y = pitchLimit;
 	}
-		
+
 	updateMatrix();
 }
 

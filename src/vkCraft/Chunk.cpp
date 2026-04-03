@@ -53,8 +53,8 @@ int Chunk::getHeight(int x, int y, int seed, double noiseScale)
 
 	int octaves = 6;
 
-	// Loop through the octaves
-	for (int a = 0; a < octaves - 1; a++)
+	// Loop through all octaves
+	for (int a = 0; a < octaves; a++)
 	{
 		// Increase the frequency with every octave
 		double frequency = pow(frequencyPower, a);

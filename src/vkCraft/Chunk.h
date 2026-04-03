@@ -33,9 +33,13 @@ public:
 	static const int CLOUD = 7;
 
 	// Foliage (plants, flowers, trees)
-	static const int FLOWER_RED = 500;
+	static const int FLOWER_RED    = 500;
 	static const int FLOWER_YELLOW = 501;
-	static const int BIRCH = 502;
+	static const int BIRCH         = 502;
+
+	// First and last foliage type value – used to detect foliage blocks
+	static const int FOLIAGE_START = FLOWER_RED;
+	static const int FOLIAGE_END   = BIRCH;
 
 	/**
 	 * Chunk data, constants defined in this class.
@@ -83,6 +87,10 @@ public:
 	 */
 	double getNoise(double x, double z, int seed);
 
+	/**
+	 * Hash a lattice point (x, z) with the given seed to a pseudo-random
+	 * value in [-1, 1]. Used as the basis for getNoise().
+	 */
 	double findNoise(double x, double z, int seed);
 
 	/**
