@@ -1,5 +1,3 @@
-#pragma once
-
 #include "ChunkGeometry.h"
 
 glm::vec4 ChunkGeometry::calculateUV(int x, int y, int size)
@@ -25,36 +23,24 @@ void ChunkGeometry::generate(Chunk *chunk, ChunkWorld *world)
 			{
 				int value = chunk->data[x][y][z];
 
-				/*
-				//Global index
-				glm::ivec3 globalPosition = { start.x + x, start.y + y, start.z + z };
-
-				//Check data
-				if (value != world->getBlock(globalPosition))
-				{
-					std::cout << "VkCraft: The world returned a wrong value." << std::endl;
-				}
-				*/
-
 				if (value != Chunk::EMPTY)
 				{
-					//Base
+					// Base world position
 					float ix = x + start.x;
 					float iy = y + start.y;
 					float iz = z + start.z;
 						
-					//Positive
+					// Positive face extent
 					float px = 0.5f + ix;
 					float py = 0.5f + iy;
 					float pz = 0.5f + iz;
 						
-					//Negative
+					// Negative face extent
 					float nx = ix - 0.5f;
 					float ny = iy - 0.5f;
 					float nz = iz - 0.5f;
-					
 
-					//Top face
+					// Top face
 					if (y == Chunk::SIZE - 1 || chunk->data[x][y + 1][z] == Chunk::EMPTY)
 					{
 						indices.push_back(size + 1);
@@ -71,7 +57,7 @@ void ChunkGeometry::generate(Chunk *chunk, ChunkWorld *world)
 						size += 4;
 					}
 
-					//Bottom face
+					// Bottom face
 					if (y == 0 || chunk->data[x][y - 1][z] == Chunk::EMPTY)
 					{
 						indices.push_back(size + 3);
@@ -88,7 +74,7 @@ void ChunkGeometry::generate(Chunk *chunk, ChunkWorld *world)
 						size += 4;
 					}
 
-					//Front face
+					// Front face
 					if (z == Chunk::SIZE - 1 || chunk->data[x][y][z + 1] == Chunk::EMPTY)
 					{
 						indices.push_back(size);
@@ -105,7 +91,7 @@ void ChunkGeometry::generate(Chunk *chunk, ChunkWorld *world)
 						size += 4;
 					}
 
-					//Back face
+					// Back face
 					if (z == 0 || chunk->data[x][y][z - 1] == Chunk::EMPTY)
 					{
 						indices.push_back(size + 2);
@@ -122,7 +108,7 @@ void ChunkGeometry::generate(Chunk *chunk, ChunkWorld *world)
 						size += 4;
 					}
 
-					//Right face
+					// Right face
 					if (x == Chunk::SIZE - 1 || chunk->data[x + 1][y][z] == Chunk::EMPTY)
 					{
 						indices.push_back(size + 2);
@@ -139,7 +125,7 @@ void ChunkGeometry::generate(Chunk *chunk, ChunkWorld *world)
 						size += 4;
 					}
 
-					//Left face
+					// Left face
 					if (x == 0 || chunk->data[x - 1][y][z] == Chunk::EMPTY)
 					{
 						indices.push_back(size);

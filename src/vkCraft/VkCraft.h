@@ -37,27 +37,38 @@
 class VkCraft
 {
 public:
-	//Maximum amount of frames that can be renderer simultaneously
+	// Maximum amount of frames that can be rendered simultaneously
 	const int CONCURRENT_FRAMES = 1;
 
-	//Validation layer control
-	const bool ENABLE_VALIDATION_LAYERS = true;
+	// Render distance in chunks
+	const int RENDER_DISTANCE = 5;
 
-	//Vulkan context and window
+	// World seed
+	const int WORLD_SEED = 349995;
+
+	// Validation layer control – disable in release builds via NDEBUG
+#ifdef NDEBUG
+	const bool ENABLE_VALIDATION_LAYERS = false;
+#else
+	const bool ENABLE_VALIDATION_LAYERS = true;
+#endif
+
+	// Vulkan context and window
 	GLFWwindow *window;
 	VkInstance instance;
 	VkSurfaceKHR surface;
 
-	//Error handler
+	// Error handler (VkDebugUtilsMessengerEXT is the modern replacement;
+	// VkDebugReportCallbackEXT is kept here for compatibility with older SDK versions)
 	VkDebugReportCallbackEXT callback;
 
 	Device device;
 
-	//GRAPHICS QUEUE CLASS
+	// Graphics queue
 	VkQueue graphicsQueue;
 	VkQueue presentQueue;
 
-	//SWAP CHAIN HANDLER CLASS
+	// Swap chain
 	VkSwapchainKHR swapChain;
 	std::vector<VkImage> swapChainImages;
 	VkFormat swapChainImageFormat;
@@ -73,41 +84,41 @@ public:
 
 	VkCommandPool commandPool;
 
-	//Render pipeline
+	// Render pipeline
 	VkCommandPool renderCommandPool;
 	std::vector<VkCommandBuffer> renderCommandBuffers;
 
-	//Uniform buffer
+	// Uniform buffer
 	VkBuffer uniformBuffer;
 	VkDeviceMemory uniformBufferMemory;
 
 	Texture texture;
 	VkSampler textureSampler = VK_NULL_HANDLE;
 
-	//Depth buffer
+	// Depth buffer
 	Texture depth;
 
-	//Descriptors
+	// Descriptors
 	VkDescriptorPool descriptorPool;
 	VkDescriptorSet descriptorSet;
 
-	//Syncronization semaphores (one for each concurrent frame)
+	// Synchronization semaphores (one for each concurrent frame)
 	std::vector<VkSemaphore> imageAvailableSemaphores;
 	std::vector<VkSemaphore> renderFinishedSemaphores;
 	std::vector<VkFence> inFlightFences;
 	size_t currentFrame = 0;
 
-	//Object3D and camera
+	// Object3D and camera
 	Object3D model;
 	FirstPersonCamera camera;
-	glm::ivec3 cameraIndex = { 1, 2, 3 };
+	glm::ivec3 cameraIndex = { 0, 0, 0 };
 	UniformBufferObject uniformBuf;
 	double time, delta;
 
-	ChunkWorld world = ChunkWorld(349995);
+	ChunkWorld world = ChunkWorld(WORLD_SEED);
 
-	/** 
-	 * Use lugarG validation layers provided by the SDK.
+	/**
+	 * Use LunarG validation layers provided by the SDK.
 	 */
 	const std::vector<const char*> validationLayers =
 	{
@@ -120,12 +131,12 @@ public:
 	};
 
 	/**
-	 * Declare the debug report extension
+	 * Declare the debug report extension.
 	 */
 	VkResult CreateDebugReportCallbackEXT(VkInstance instance, const VkDebugReportCallbackCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugReportCallbackEXT* pCallback);
 
 	/**
-	 *Destroy the debug report extension
+	 * Destroy the debug report extension.
 	 */
 	void DestroyDebugReportCallbackEXT(VkInstance instance, VkDebugReportCallbackEXT callback, const VkAllocationCallbacks* pAllocator);
 
@@ -150,13 +161,13 @@ public:
 	void render();
 
 	/**
-	 * Initialize the data structures, get devices and prepare vulkan for rendering.
+	 * Initialize the data structures, get devices and prepare Vulkan for rendering.
 	 */
 	void initialize();
 
 	/**
-	* Recreate the hole swap chain.
-	*/
+	 * Recreate the whole swap chain.
+	 */
 	void recreateSwapChain();
 
 	/**
@@ -165,17 +176,18 @@ public:
 	void recreateRenderingCommandBuffers();
 
 	/**
-	 * Cleanup swapchain elements. Can be used to clear the swapchain before recreating it using a diferent layout.
+	 * Cleanup swap chain elements. Can be used to clear the swap chain before recreating it
+	 * using a different layout.
 	 */
 	void cleanupSwapChain();
 
-	/** 
+	/**
 	 * Full cleanup of memory.
 	 */
 	void cleanup();
 
 	/**
-	 * Create a new vulkan instance.
+	 * Create a new Vulkan instance.
 	 */
 	void createInstance();
 
@@ -190,12 +202,12 @@ public:
 	void createSurface();
 
 	/**
-	 * Choose a appropiate physical device to be used.
+	 * Choose an appropriate physical device to be used.
 	 */
 	void pickPhysicalDevice();
 
 	/**
-	 * Create a logical device using the physical device selected.
+	 * Create a logical device using the selected physical device.
 	 */
 	void createLogicalDevice();
 
@@ -209,7 +221,7 @@ public:
 	 */
 	void createImageViews();
 
-	/** 
+	/**
 	 * Create render pass (indicates where to read and write rendered data).
 	 */
 	void createRenderPass();
@@ -219,8 +231,8 @@ public:
 	 */
 	void createDescriptorSetLayout();
 
-	/** 
-	 * Initializer graphics pipeline, load shaders, configure vertex format and rendering steps.
+	/**
+	 * Initialize graphics pipeline, load shaders, configure vertex format and rendering steps.
 	 */
 	void createGraphicsPipeline();
 
@@ -244,117 +256,125 @@ public:
 	void createDescriptorSet();
 
 	/**
-	 * Handle image layout transitions
+	 * Handle image layout transitions.
+	 * TODO: Move to ImageUtils
 	 */
 	void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
 
 	/**
-	 * Copy buffer to image helper (move to ImageUtils)
+	 * Copy buffer to image helper.
+	 * TODO: Move to ImageUtils
 	 */
 	void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
 
 	/**
-	 * Create texture image (move to ImageUtils)
+	 * Create texture image.
+	 * TODO: Move to ImageUtils
 	 */
 	void createTextureImage(const char *fname);
 
 	/**
-	 * Create image view (generic) (move to ImageViewUtils maybe)
+	 * Create image view (generic).
+	 * TODO: Move to ImageViewUtils
 	 */
 	VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
 
 	/**
-	 * Create vulkan image and allocate memory for it (move to ImageUtils)
+	 * Create Vulkan image and allocate memory for it.
+	 * TODO: Move to ImageUtils
 	 */
 	void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
 
 	/**
-	 * Depth buffer creation
+	 * Depth buffer creation.
 	 */
 	void createDepthResources();
 
 	/**
-	 * Check if the format for depth buffer has a stencil component
+	 * Check if the format for depth buffer has a stencil component.
 	 */
 	bool hasStencilComponent(VkFormat format);
 
 	/**
-	 * Get depth buffer format
+	 * Get depth buffer format.
 	 */
 	VkFormat findDepthFormat();
 
 	/**
-	 * Check formats supported by the device from a vector of candidates
+	 * Check formats supported by the device from a vector of candidates.
 	 */
 	VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
 
 	/**
-	 * Create the actual draw command buffer
+	 * Create the actual draw command buffer.
 	 */
 	void createRenderingCommandBuffers();
 
 	/**
-	 * Create syncronization semaphores and fences
+	 * Create synchronization semaphores and fences.
 	 */
 	void createSyncObjects();
 
 	/**
-	 * Begin a single time use command buffer (Move to CommandBufferUtils)
+	 * Begin a single-time-use command buffer.
+	 * TODO: Move to CommandBufferUtils
 	 */
 	VkCommandBuffer beginSingleTimeCommands();
 
 	/**
-	 * End single time command buffer (Move to CommandBufferUtils)
+	 * End single-time-use command buffer.
+	 * TODO: Move to CommandBufferUtils
 	 */
 	void endSingleTimeCommands(VkCommandBuffer commandBuffer);
 
 	/**
-	 * Create a shader from SPIR-V code
+	 * Create a shader from SPIR-V code.
 	 */
 	VkShaderModule createShaderModule(const std::vector<char>& code);
 
 	/**
-	 * Check if a device has all the required capabilities (is a discrete GPU and supports geometry shading).
+	 * Check if a device has all the required capabilities
+	 * (is a discrete GPU and supports geometry shading).
 	 */
 	bool isPhysicalDeviceSuitable(VkPhysicalDevice physical);
 
 	/**
-	 * Check available device extensions
+	 * Check available device extensions.
 	 */
 	bool checkDeviceExtensionSupport(VkPhysicalDevice physical);
 
 	/**
-	 * Choose swap chain format (color depth)
+	 * Choose swap chain format (color depth).
 	 */
 	VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
 
 	/**
-	 * Chose swap chain presentation mode
+	 * Choose swap chain presentation mode.
 	 */
 	VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR> availablePresentModes);
 
 	/**
-	 * Choose resolution of the swap chain images (get it from the window size)
+	 * Choose resolution of the swap chain images (get it from the window size).
 	 */
 	VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
 
 	/**
-	 * Check compatible swap chain support for our device
+	 * Check compatible swap chain support for our device.
 	 */
 	SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice physical);
 
 	/**
-	 * Get required extensions if validation layers are active also add debug extension to the list
+	 * Get required extensions; if validation layers are active also add debug extension to the list.
 	 */
 	std::vector<const char*> getRequiredExtensions();
 
 	/**
-	 * Check if validation layers are supported
+	 * Check if validation layers are supported.
 	 */
 	bool checkValidationLayerSupport();
 
 	/**
-	 * Debug callbacks
+	 * Debug callback.
 	 */
 	static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objType, uint64_t obj, size_t location, int32_t code, const char* layerPrefix, const char* msg, void* userData);
 };

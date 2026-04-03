@@ -1,5 +1,3 @@
-#pragma once
-
 #include "Chunk.h"
 
 void Chunk::setIndex(glm::ivec3 _index)
@@ -27,10 +25,10 @@ void Chunk::generate(int seed)
 			{
 				int h = y + index.y * SIZE;
 
-				//Generate terrain
+				// Generate terrain
 				data[x][y][z] = getBlock(h, terrain);
 
-				//Generate clouds
+				// Generate clouds
 				if (h == CLOUD_LEVEL)
 				{
 					int cloud = getHeight(v, w, seed * 2) * 3;
@@ -45,26 +43,26 @@ void Chunk::generate(int seed)
 	}
 }
 
-int Chunk::getHeight(int x, int y, int seed, double zoomget)
+int Chunk::getHeight(int x, int y, int seed, double noiseScale)
 {
 	double frequencyPower = 2.0;
 	double amplitudePower = 0.5;
 
-	double zoom = zoomget;
+	double zoom = noiseScale;
 	double noise = 0;
 
 	int octaves = 6;
 
-	//Loop trough the octaves
+	// Loop through the octaves
 	for (int a = 0; a < octaves - 1; a++)
 	{
-		//Increase the frequency with every loop of the octave.
+		// Increase the frequency with every octave
 		double frequency = pow(frequencyPower, a);
 
-		//Decrese the amplitude with every loop of the octave.
+		// Decrease the amplitude with every octave
 		double amplitude = pow(amplitudePower, a);
 
-		//Perlin noise functions. It calculates all our zoom and frequency and amplitude
+		// Perlin noise – combines zoom, frequency and amplitude
 		noise += getNoise(((double)x) * frequency / zoom, ((double)y) / zoom * frequency, seed) * amplitude;
 	}
 
@@ -86,22 +84,18 @@ double Chunk::getNoise(double x, double z, int seed)
 	double floorx = (double)((int)x);
 	double floory = (double)((int)z);
 
-	//Integer declaration
+	// Get the four surrounding lattice points to calculate the transition
 	double s, t, u, v;
-
-	//Get the surrounding pixels to calculate the transition.
-	s = findNoise(floorx, floory, seed);
-	t = findNoise(floorx + 1, floory, seed);
-	u = findNoise(floorx, floory + 1, seed);
+	s = findNoise(floorx,     floory,     seed);
+	t = findNoise(floorx + 1, floory,     seed);
+	u = findNoise(floorx,     floory + 1, seed);
 	v = findNoise(floorx + 1, floory + 1, seed);
 
-	//Interpolate between the values.
+	// Interpolate along x for both rows
 	double int1 = interpolate(s, t, x - floorx);
-
-	//Use x-floorx, to get 1st dimension, it's part of the cosine formula.
 	double int2 = interpolate(u, v, x - floorx);
 
-	//Use y-floory, to get the 2nd dimension.
+	// Interpolate along z between the two rows
 	return interpolate(int1, int2, z - floory);
 }
 
@@ -118,7 +112,7 @@ double Chunk::findNoise(double x, double z, int seed)
 
 int Chunk::getBlock(int z, int height)
 {
-	//Above water level
+	// Above water level
 	if (z > WATER_LEVEL)
 	{
 		if (z > height)
@@ -134,7 +128,7 @@ int Chunk::getBlock(int z, int height)
 			return DIRT;
 		}
 	}
-	//Under water
+	// Below water level
 	else
 	{
 		if (z > height + 5)

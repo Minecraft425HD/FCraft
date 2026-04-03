@@ -1,5 +1,3 @@
-#pragma once
-
 #include "ChunkNode.h"
 
 ChunkNode::ChunkNode(glm::ivec3 _index, int _seed)
@@ -24,7 +22,7 @@ void ChunkNode::getNodes(std::vector<ChunkNode*> *nodes, int recursive)
 		}
 	}
 	
-	if (found == false)
+	if (!found)
 	{
 		nodes->push_back(this);
 	}
@@ -52,12 +50,12 @@ Geometry* ChunkNode::getGeometry(ChunkWorld *world)
 
 void ChunkNode::getGeometries(std::vector<Geometry*> *geometries, ChunkWorld *world, int recursive)
 {
-	if(state < GEOMETRY)
+	if (state < GEOMETRY)
 	{
 		generateGeometry(world);
 	}
 
-	//Check if geometries contains geometry, if it does not add new
+	// Add geometry only if not already in the list
 	if (std::find(geometries->begin(), geometries->end(), geometry) == geometries->end())
 	{
 		geometries->push_back(geometry);
@@ -82,39 +80,39 @@ void ChunkNode::generateNeighbors(int recursive)
 {
 	searchNeighbors();
 
-	//X - 1 Left
+	// X - 1  Left
 	if (neighbors[ChunkNode::LEFT] == nullptr)
 	{
 		neighbors[ChunkNode::LEFT] = new ChunkNode(glm::ivec3(index.x - 1, index.y, index.z), seed);
 		neighbors[ChunkNode::LEFT]->neighbors[ChunkNode::RIGHT] = this;
 	}
-	//X + 1 Right
+	// X + 1  Right
 	if (neighbors[ChunkNode::RIGHT] == nullptr)
 	{
 		neighbors[ChunkNode::RIGHT] = new ChunkNode(glm::ivec3(index.x + 1, index.y, index.z), seed);
 		neighbors[ChunkNode::RIGHT]->neighbors[ChunkNode::LEFT] = this;
 	}
 
-	//Y + 1 Up
+	// Y + 1  Up
 	if (neighbors[ChunkNode::UP] == nullptr)
 	{
 		neighbors[ChunkNode::UP] = new ChunkNode(glm::ivec3(index.x, index.y + 1, index.z), seed);
 		neighbors[ChunkNode::UP]->neighbors[ChunkNode::DOWN] = this;
 	}
-	//Y - 1 Down
+	// Y - 1  Down
 	if (neighbors[ChunkNode::DOWN] == nullptr)
 	{
 		neighbors[ChunkNode::DOWN] = new ChunkNode(glm::ivec3(index.x, index.y - 1, index.z), seed);
 		neighbors[ChunkNode::DOWN]->neighbors[ChunkNode::UP] = this;
 	}
 
-	//Z - 1 Front
+	// Z - 1  Front
 	if (neighbors[ChunkNode::FRONT] == nullptr)
 	{
 		neighbors[ChunkNode::FRONT] = new ChunkNode(glm::ivec3(index.x, index.y, index.z - 1), seed);
 		neighbors[ChunkNode::FRONT]->neighbors[ChunkNode::BACK] = this;
 	}
-	//Z + 1 Back
+	// Z + 1  Back
 	if (neighbors[ChunkNode::BACK] == nullptr)
 	{
 		neighbors[ChunkNode::BACK] = new ChunkNode(glm::ivec3(index.x, index.y, index.z + 1), seed);
@@ -192,7 +190,6 @@ void ChunkNode::searchNeighbors()
 			neighbors[ChunkNode::DOWN] = down;
 		}
 	}
-	
 }
 
 ChunkNode* ChunkNode::searchNode(glm::ivec3 index, std::vector<ChunkNode*> *nodes)
@@ -204,7 +201,7 @@ ChunkNode* ChunkNode::searchNode(glm::ivec3 index, std::vector<ChunkNode*> *node
 
 	nodes->push_back(this);
 	
-	//Check if it is one of its neighbors
+	// Check direct neighbors first
 	for (unsigned int i = 0; i < 6; i++)
 	{
 		if (neighbors[i] != nullptr && neighbors[i]->index == index)
@@ -213,7 +210,7 @@ ChunkNode* ChunkNode::searchNode(glm::ivec3 index, std::vector<ChunkNode*> *node
 		}
 	}
 
-	//Recursively search neighbors
+	// Recursively search neighbor sub-graphs
 	for (unsigned int i = 0; i < 6; i++)
 	{
 		if (neighbors[i] != nullptr)
@@ -289,6 +286,12 @@ void ChunkNode::dispose(VkDevice &device)
 	{
 		if (neighbors[i] != nullptr)
 		{
+			// Only recurse if the neighbor hasn't been freed yet,
+			// and clear the back-pointer first to prevent double-free
+			// via the symmetric neighbor reference.
+			int opposite = i ^ 1; // LEFT<->RIGHT, FRONT<->BACK, UP<->DOWN
+			neighbors[i]->neighbors[opposite] = nullptr;
+
 			if (neighbors[i]->state >= GEOMETRY)
 			{
 				neighbors[i]->dispose(device);

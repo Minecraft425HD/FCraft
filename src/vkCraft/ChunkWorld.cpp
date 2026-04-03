@@ -1,5 +1,3 @@
-#pragma once
-
 #include "ChunkWorld.h"
 
 ChunkWorld::ChunkWorld(int _seed)
@@ -12,9 +10,9 @@ ChunkWorld::ChunkWorld(int _seed)
 
 glm::ivec3 ChunkWorld::getIndex(glm::vec3 position)
 {
-	int x = position.x >= 0 ? (position.x / Chunk::SIZE) : (position.x / Chunk::SIZE - 1);
-	int y = position.y >= 0 ? (position.y / Chunk::SIZE) : (position.y / Chunk::SIZE - 1);
-	int z = position.z >= 0 ? (position.z / Chunk::SIZE) : (position.z / Chunk::SIZE - 1);
+	int x = position.x >= 0 ? (int)(position.x / Chunk::SIZE) : (int)(position.x / Chunk::SIZE) - 1;
+	int y = position.y >= 0 ? (int)(position.y / Chunk::SIZE) : (int)(position.y / Chunk::SIZE) - 1;
+	int z = position.z >= 0 ? (int)(position.z / Chunk::SIZE) : (int)(position.z / Chunk::SIZE) - 1;
 
 	return { x, y, z };
 }
@@ -41,7 +39,7 @@ ChunkNode* ChunkWorld::getChunkNode(glm::ivec3 index)
 {
 	glm::ivec3 offset = current->index - index;
 
-	//X
+	// X axis
 	if (offset.x > 0)
 	{
 		for (int x = 0; x < offset.x; x++)
@@ -67,7 +65,7 @@ ChunkNode* ChunkWorld::getChunkNode(glm::ivec3 index)
 		}
 	}
 
-	//Y
+	// Y axis
 	if (offset.y > 0)
 	{
 		for (int y = 0; y < offset.y; y++)
@@ -93,7 +91,7 @@ ChunkNode* ChunkWorld::getChunkNode(glm::ivec3 index)
 		}
 	}
 
-	//Z
+	// Z axis
 	if (offset.z > 0)
 	{
 		for (int z = 0; z < offset.z; z++)
@@ -126,11 +124,17 @@ int ChunkWorld::getBlock(glm::ivec3 position)
 {
 	ChunkNode *node = getChunkNode(getIndex(position));
 
-	return node->chunk.data[position.x % Chunk::SIZE][position.y % Chunk::SIZE][position.z % Chunk::SIZE];
+	// Use a safe positive modulo to avoid negative indices on negative coordinates
+	int lx = ((position.x % Chunk::SIZE) + Chunk::SIZE) % Chunk::SIZE;
+	int ly = ((position.y % Chunk::SIZE) + Chunk::SIZE) % Chunk::SIZE;
+	int lz = ((position.z % Chunk::SIZE) + Chunk::SIZE) % Chunk::SIZE;
+
+	return node->chunk.data[lx][ly][lz];
 }
 
 void ChunkWorld::dispose(VkDevice &device)
 {
 	root->dispose(device);
 	delete root;
+	root = nullptr;
 }
