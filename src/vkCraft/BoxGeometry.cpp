@@ -1,5 +1,3 @@
-#pragma once
-
 #include "BoxGeometry.h"
 
 BoxGeometry::BoxGeometry(float _width, float _height, float _depth)
@@ -26,7 +24,7 @@ void BoxGeometry::generate()
 		{ { 1, 1, -1 },{ 0, 0, -1 },{ 0, 1 } }, //6
 		{ { -1, -1, -1 },{ 0, 0, -1 },{ 1, 0 } }, //4
 		{ { -1, 1, -1 },{ 0, 0, -1 },{ 1, 1 } }, //5
-			
+
 		//Top face
 		{ { -1, 1, 1 },{ 0, 1, 0 },{ 0, 0 } }, //9
 		{ { -1, 1, -1 },{ 0, 1, 0 },{ 0, 1 } }, //8
@@ -73,10 +71,10 @@ void BoxGeometry::generate()
 		20, 22, 23, 20, 23, 21
 	};
 
-	for (int i = 0; i < vertices.size(); i++)
+	for (int i = 0; i < (int)vertices.size(); i++)
 	{
-		vertices[i].pos.x *= width / 2.0;
-		vertices[i].pos.y *= height / 2.0;
-		vertices[i].pos.z *= depth / 2.0;
+		vertices[i].pos.x *= width  / 2.0f;
+		vertices[i].pos.y *= height / 2.0f;
+		vertices[i].pos.z *= depth  / 2.0f;
 	}
 }
