@@ -48,19 +48,6 @@ public:
 	static const int OPPOSITE[6];
 
 	/**
-	 * The world offset per block for each possible direction.
-	 */
-	/*const glm::vec3 DIRECTION[6] =
-	{
-		{-1.0, 0.0, 0.0},
-		{1.0, 0.0, 0.0},
-		{0.0, 0.0, -1.0},
-		{0.0, 0.0, 1.0},
-		{0.0, 1.0, 0.0},
-		{0.0, -1.0, 0.0}
-	};*/
-
-	/**
 	 * Chunk data.
 	 */
 	Chunk chunk;
@@ -153,9 +140,11 @@ public:
 	void generateGeometry(ChunkWorld *world);
 
 	/**
-	 * Dispose all the geometries attached to this node recursively.
+	 * Dispose all geometry and free all nodes in the chunk graph.
 	 *
-	 * Checks if the geometry has vulkan buffers and also disposes them.
+	 * Uses an iterative work-stack (BFS) instead of recursion to avoid
+	 * stack overflow for large render distances. The caller (ChunkWorld)
+	 * is responsible for deleting the root node itself after this call.
 	 */
 	void dispose(VkDevice &device);
 };

@@ -280,37 +280,60 @@ void ChunkNode::generateGeometry(ChunkWorld *world)
 
 void ChunkNode::dispose(VkDevice &device)
 {
-	// Dispose GPU buffers only if geometry was actually uploaded.
-	// The ChunkGeometry object itself must always be freed to avoid leaking
-	// the heap allocation made in the constructor.
-	if (state >= GEOMETRY)
-	{
-		geometry->dispose(device);
-		state = DATA;
-	}
+	// Iterative BFS dispose to avoid stack overflow for large render distances.
+	// We collect all reachable nodes into a set, sever all neighbor links,
+	// then destroy each node individually.
+	std::vector<ChunkNode*> toDelete;
+	std::vector<ChunkNode*> workStack;
+	workStack.push_back(this);
 
-	if (geometry != nullptr)
+	while (!workStack.empty())
 	{
-		delete geometry;
-		geometry = nullptr;
-	}
+		ChunkNode* node = workStack.back();
+		workStack.pop_back();
 
-	for (unsigned int i = 0; i < 6; i++)
-	{
-		if (neighbors[i] != nullptr)
+		// Skip if already queued
+		if (std::find(toDelete.begin(), toDelete.end(), node) != toDelete.end())
 		{
-			// Clear the symmetric back-pointer first to prevent a double-free
-			// when the neighbor's dispose() walks back to this node.
-			// Use the explicit OPPOSITE table instead of i^1 so that this
-			// stays correct if the direction constants are ever reordered.
-			neighbors[i]->neighbors[OPPOSITE[i]] = nullptr;
+			continue;
+		}
 
-			if (neighbors[i]->state >= GEOMETRY)
+		toDelete.push_back(node);
+
+		for (unsigned int i = 0; i < 6; i++)
+		{
+			if (node->neighbors[i] != nullptr)
 			{
-				neighbors[i]->dispose(device);
+				workStack.push_back(node->neighbors[i]);
 			}
-			delete neighbors[i];
-			neighbors[i] = nullptr;
+		}
+	}
+
+	// Sever all neighbor links first so no node can be reached twice
+	for (ChunkNode* node : toDelete)
+	{
+		for (unsigned int i = 0; i < 6; i++)
+		{
+			node->neighbors[i] = nullptr;
+		}
+	}
+
+	// Destroy GPU buffers and free memory for each node
+	for (ChunkNode* node : toDelete)
+	{
+		if (node->state >= GEOMETRY && node->geometry != nullptr)
+		{
+			node->geometry->dispose(device);
+		}
+		if (node->geometry != nullptr)
+		{
+			delete node->geometry;
+			node->geometry = nullptr;
+		}
+		// Only delete neighbors; do not delete 'this' – caller (ChunkWorld) owns the root pointer
+		if (node != this)
+		{
+			delete node;
 		}
 	}
 }
