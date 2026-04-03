@@ -1,0 +1,154 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Source Files\geometry">
+      <UniqueIdentifier>{48674723-06ab-4eb1-a925-3e1bb3ee16e0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\objects">
+      <UniqueIdentifier>{2ce81be3-fb41-412b-800e-d228d9e18960}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\utils">
+      <UniqueIdentifier>{95ce4320-55c0-46e0-a484-029a9fefd6d2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\renderer">
+      <UniqueIdentifier>{194d02e8-cda6-4631-a4e7-c92b20d23ea8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\chunk">
+      <UniqueIdentifier>{69354b52-4646-411b-9cde-d45f5f59b8dd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\renderer\buffers">
+      <UniqueIdentifier>{8e31bfa5-4f02-407e-917d-4ae0e7630615}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\texture">
+      <UniqueIdentifier>{6ebe4f5b-ace3-477c-ad6c-5b6582d9f0eb}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="BoxGeometry.cpp">
+      <Filter>Source Files\geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="Geometry.cpp">
+      <Filter>Source Files\geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="PlaneGeometry.cpp">
+      <Filter>Source Files\geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="Object3D.cpp">
+      <Filter>Source Files\objects</Filter>
+    </ClCompile>
+    <ClCompile Include="Vertex.cpp">
+      <Filter>Source Files\renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="Camera.cpp">
+      <Filter>Source Files\objects</Filter>
+    </ClCompile>
+    <ClCompile Include="Texture.cpp">
+      <Filter>Source Files\texture</Filter>
+    </ClCompile>
+    <ClCompile Include="FileUtils.cpp">
+      <Filter>Source Files\utils</Filter>
+    </ClCompile>
+    <ClCompile Include="QueueFamilyIndices.cpp">
+      <Filter>Source Files\renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="FirstPersonCamera.cpp">
+      <Filter>Source Files\objects</Filter>
+    </ClCompile>
+    <ClCompile Include="Device.cpp">
+      <Filter>Source Files\renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="Chunk.cpp">
+      <Filter>Source Files\chunk</Filter>
+    </ClCompile>
+    <ClCompile Include="ChunkGeometry.cpp">
+      <Filter>Source Files\chunk</Filter>
+    </ClCompile>
+    <ClCompile Include="BufferUtils.cpp">
+      <Filter>Source Files\renderer\buffers</Filter>
+    </ClCompile>
+    <ClCompile Include="CommandBufferUtils.cpp">
+      <Filter>Source Files\renderer\buffers</Filter>
+    </ClCompile>
+    <ClCompile Include="ChunkWorld.cpp">
+      <Filter>Source Files\chunk</Filter>
+    </ClCompile>
+    <ClCompile Include="ChunkNode.cpp">
+      <Filter>Source Files\chunk</Filter>
+    </ClCompile>
+    <ClCompile Include="UniformBufferObject.h">
+      <Filter>Source Files\renderer\buffers</Filter>
+    </ClCompile>
+    <ClCompile Include="SwapChainSupportDetails.h">
+      <Filter>Source Files\renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="VkCraft.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="ChunkWorld.h">
+      <Filter>Source Files\chunk</Filter>
+    </ClInclude>
+    <ClInclude Include="ChunkNode.h">
+      <Filter>Source Files\chunk</Filter>
+    </ClInclude>
+    <ClInclude Include="Chunk.h">
+      <Filter>Source Files\chunk</Filter>
+    </ClInclude>
+    <ClInclude Include="ChunkGeometry.h">
+      <Filter>Source Files\chunk</Filter>
+    </ClInclude>
+    <ClInclude Include="Geometry.h">
+      <Filter>Source Files\geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="Vertex.h">
+      <Filter>Source Files\renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Device.h">
+      <Filter>Source Files\renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="BufferUtils.h">
+      <Filter>Source Files\renderer\buffers</Filter>
+    </ClInclude>
+    <ClInclude Include="CommandBufferUtils.h">
+      <Filter>Source Files\renderer\buffers</Filter>
+    </ClInclude>
+    <ClInclude Include="QueueFamilyIndices.h">
+      <Filter>Source Files\renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Texture.h">
+      <Filter>Source Files\texture</Filter>
+    </ClInclude>
+    <ClInclude Include="FileUtils.h">
+      <Filter>Source Files\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Object3D.h">
+      <Filter>Source Files\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="Camera.h">
+      <Filter>Source Files\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="FirstPersonCamera.h">
+      <Filter>Source Files\objects</Filter>
+    </ClInclude>
+    <ClInclude Include="BoxGeometry.h">
+      <Filter>Source Files\geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="PlaneGeometry.h">
+      <Filter>Source Files\geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="VkCraft.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+</Project>
