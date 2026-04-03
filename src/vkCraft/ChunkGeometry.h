@@ -29,22 +29,24 @@ public:
 	const glm::vec4 BLOCK_UVS[8] =
 	{
 		calculateUV(12, 14, 16), //EMPTY
-		calculateUV(0, 0, 16), //GRASS
-		calculateUV(2, 1, 16), //SAND
-		calculateUV(1, 0, 16), //STONE
-		calculateUV(2, 0, 16), //DIRT
+		calculateUV(0, 0, 16),  //GRASS
+		calculateUV(2, 1, 16),  //SAND
+		calculateUV(1, 0, 16),  //STONE
+		calculateUV(2, 0, 16),  //DIRT
 		calculateUV(15, 13, 16), //WATER
 		calculateUV(15, 15, 16), //LAVA
-		calculateUV(2, 4, 16) //CLOUD
+		calculateUV(2, 4, 16)   //CLOUD
 	};
 
 	/**
-	* List of UV's for the fooliage.
-	*/
-	const glm::vec4 FLOOLIAGE_UVS[2] =
+	 * List of UV's for foliage (plants, flowers, trees).
+	 * Order must match Chunk::FLOWER_RED (500), FLOWER_YELLOW (501), BIRCH (502).
+	 */
+	const glm::vec4 FOLIAGE_UVS[3] =
 	{
 		calculateUV(12, 0, 16), //FLOWER_RED
-		calculateUV(13, 0, 16) //FLOWER_YELLOW
+		calculateUV(13, 0, 16), //FLOWER_YELLOW
+		calculateUV(5, 3, 16)   //BIRCH
 	};
 
 	/**
