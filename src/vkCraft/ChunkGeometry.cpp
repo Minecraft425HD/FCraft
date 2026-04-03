@@ -1,5 +1,3 @@
-#pragma once
-
 #include "ChunkGeometry.h"
 
 glm::vec4 ChunkGeometry::calculateUV(int x, int y, int size)
@@ -24,17 +22,6 @@ void ChunkGeometry::generate(Chunk *chunk, ChunkWorld *world)
 			for (int y = 0; y < Chunk::SIZE; y++)
 			{
 				int value = chunk->data[x][y][z];
-
-				/*
-				//Global index
-				glm::ivec3 globalPosition = { start.x + x, start.y + y, start.z + z };
-
-				//Check data
-				if (value != world->getBlock(globalPosition))
-				{
-					std::cout << "VkCraft: The world returned a wrong value." << std::endl;
-				}
-				*/
 
 				if (value != Chunk::EMPTY)
 				{

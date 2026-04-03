@@ -13,7 +13,7 @@ class ChunkNode
 {
 public:
 	/**
-	 * Uninitiaalized state, the node has no chunk data and geometry.
+	 * Uninitialized state, the node has no chunk data and geometry.
 	 */
 	static const int UNINITIALIZED = 0;
 
@@ -23,7 +23,7 @@ public:
 	static const int DATA = 1;
 
 	/**
-	 * The node and chunk and geometry data.
+	 * The node has chunk and geometry data.
 	 */
 	static const int GEOMETRY = 2;
 
@@ -38,19 +38,6 @@ public:
 	static const int BACK = 3;
 	static const int UP = 4;
 	static const int DOWN = 5;
-	
-	/**
-	 * The world offset per block for each possible direction.
-	 */
-	/*const glm::vec3 DIRECTION[6] =
-	{
-		{-1.0, 0.0, 0.0},
-		{1.0, 0.0, 0.0},
-		{0.0, 0.0, -1.0},
-		{0.0, 0.0, 1.0},
-		{0.0, 1.0, 0.0},
-		{0.0, -1.0, 0.0}
-	};*/
 
 	/**
 	 * Chunk data.
@@ -73,7 +60,7 @@ public:
 	int seed;
 
 	/**
-	 * Node index relataive to the root.
+	 * Node index relative to the root.
 	 */
 	glm::ivec3 index;
 
@@ -85,19 +72,19 @@ public:
 	int timestamp = -1;
 
 	/**
-	 * Pointer to neighboor chunks.
+	 * Pointer to neighbor chunks.
 	 */
 	ChunkNode *neighbors[6] = { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr };
 
 	ChunkNode(glm::ivec3 _index, int _seed);
 
 	/**
-	 * Get geometries from this node and its neighboors recursively.
+	 * Get geometries from this node and its neighbors recursively.
 	 */
 	void getNodes(std::vector<ChunkNode*> *nodes, int recursive = 0);
 
 	/**
-	 * Get geometries from this node and its neighboors recursively.
+	 * Get geometries from this node and its neighbors recursively.
 	 */
 	void getGeometries(std::vector<Geometry*> *geometries, ChunkWorld *world, int recursive = 0);
 
@@ -114,16 +101,16 @@ public:
 	ChunkNode* searchNode(glm::ivec3 index, std::vector<ChunkNode*> *nodes);
 
 	/**
-	 * Search neighbors connections using already known relations, should be called before generating neighbors locally.
+	 * Search neighbor connections using already known relations, should be called before generating neighbors locally.
 	 *
-	 * Only searches second order relations, should be enought to avoid repetitions.
+	 * Only searches second order relations, should be enough to avoid repetitions.
 	 */
 	void searchNeighbors();
 
 	/**
 	 * Get element from path if it is reachable.
 	 *
-	 * Path is described a directional jumps in a array.
+	 * Path is described as directional jumps in an array.
 	 */
 	ChunkNode* getNeighborPath(int path[], int size);
 
@@ -135,7 +122,7 @@ public:
 	/**
 	 * Generate geometry for this node.
 	 *
-	 * If it still has no chunk data has generate it.
+	 * If it still has no chunk data, generate it first.
 	 */
 	void generateGeometry(ChunkWorld *world);
 

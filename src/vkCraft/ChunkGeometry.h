@@ -24,7 +24,7 @@ class ChunkGeometry : public Geometry
 {
 public:
 	/**
-	 * List of UV's for the blocks.
+	 * List of UVs for the blocks.
 	 */
 	const glm::vec4 BLOCK_UVS[8] =
 	{
@@ -39,9 +39,9 @@ public:
 	};
 
 	/**
-	* List of UV's for the fooliage.
+	* List of UVs for the foliage.
 	*/
-	const glm::vec4 FLOOLIAGE_UVS[2] =
+	const glm::vec4 FOLIAGE_UVS[2] =
 	{
 		calculateUV(12, 0, 16), //FLOWER_RED
 		calculateUV(13, 0, 16) //FLOWER_YELLOW
