@@ -1,5 +1,3 @@
-#pragma once
-
 #include "BufferUtils.h"
 
 void BufferUtils::createBuffer(Device device, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory)
@@ -25,7 +23,7 @@ void BufferUtils::createBuffer(Device device, VkDeviceSize size, VkBufferUsageFl
 
 	if (vkAllocateMemory(device.logical, &allocInfo, nullptr, &bufferMemory) != VK_SUCCESS)
 	{
-		throw std::runtime_error("failed to allocate vertex buffer memory!");
+		throw std::runtime_error("vkCraft: Failed to allocate vertex buffer memory!");
 	}
 
 	vkBindBufferMemory(device.logical, buffer, bufferMemory, 0);

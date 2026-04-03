@@ -1,5 +1,16 @@
 #include "ChunkNode.h"
 
+// Explicit opposite-direction table – safer than i^1 which would silently
+// break if the enum constants are ever reordered.
+const int ChunkNode::OPPOSITE[6] = {
+	ChunkNode::RIGHT,  // opposite of LEFT
+	ChunkNode::LEFT,   // opposite of RIGHT
+	ChunkNode::BACK,   // opposite of FRONT
+	ChunkNode::FRONT,  // opposite of BACK
+	ChunkNode::DOWN,   // opposite of UP
+	ChunkNode::UP      // opposite of DOWN
+};
+
 ChunkNode::ChunkNode(glm::ivec3 _index, int _seed)
 {
 	index = _index;
@@ -269,13 +280,15 @@ void ChunkNode::generateGeometry(ChunkWorld *world)
 
 void ChunkNode::dispose(VkDevice &device)
 {
+	// Dispose GPU buffers only if geometry was actually uploaded.
+	// The ChunkGeometry object itself must always be freed to avoid leaking
+	// the heap allocation made in the constructor.
 	if (state >= GEOMETRY)
 	{
 		geometry->dispose(device);
 		state = DATA;
 	}
 
-	// Free geometry object itself
 	if (geometry != nullptr)
 	{
 		delete geometry;
@@ -286,11 +299,11 @@ void ChunkNode::dispose(VkDevice &device)
 	{
 		if (neighbors[i] != nullptr)
 		{
-			// Only recurse if the neighbor hasn't been freed yet,
-			// and clear the back-pointer first to prevent double-free
-			// via the symmetric neighbor reference.
-			int opposite = i ^ 1; // LEFT<->RIGHT, FRONT<->BACK, UP<->DOWN
-			neighbors[i]->neighbors[opposite] = nullptr;
+			// Clear the symmetric back-pointer first to prevent a double-free
+			// when the neighbor's dispose() walks back to this node.
+			// Use the explicit OPPOSITE table instead of i^1 so that this
+			// stays correct if the direction constants are ever reordered.
+			neighbors[i]->neighbors[OPPOSITE[i]] = nullptr;
 
 			if (neighbors[i]->state >= GEOMETRY)
 			{

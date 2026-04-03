@@ -58,9 +58,9 @@ public:
 	VkInstance instance;
 	VkSurfaceKHR surface;
 
-	// Error handler (VkDebugUtilsMessengerEXT is the modern replacement;
-	// VkDebugReportCallbackEXT is kept here for compatibility with older SDK versions)
-	VkDebugReportCallbackEXT callback;
+	// Debug messenger (modern VK_EXT_debug_utils replacement for the
+	// deprecated VK_EXT_debug_report / VkDebugReportCallbackEXT)
+	VkDebugUtilsMessengerEXT debugMessenger = VK_NULL_HANDLE;
 
 	Device device;
 
@@ -113,7 +113,8 @@ public:
 	FirstPersonCamera camera;
 	glm::ivec3 cameraIndex = { 0, 0, 0 };
 	UniformBufferObject uniformBuf;
-	double time, delta;
+	double time = 0.0;
+	double delta = 0.0;
 
 	ChunkWorld world = ChunkWorld(WORLD_SEED);
 
@@ -131,14 +132,19 @@ public:
 	};
 
 	/**
-	 * Declare the debug report extension.
+	 * Populate a VkDebugUtilsMessengerCreateInfoEXT structure.
 	 */
-	VkResult CreateDebugReportCallbackEXT(VkInstance instance, const VkDebugReportCallbackCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugReportCallbackEXT* pCallback);
+	void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
 
 	/**
-	 * Destroy the debug report extension.
+	 * Create the debug utils messenger extension object.
 	 */
-	void DestroyDebugReportCallbackEXT(VkInstance instance, VkDebugReportCallbackEXT callback, const VkAllocationCallbacks* pAllocator);
+	VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pMessenger);
+
+	/**
+	 * Destroy the debug utils messenger extension object.
+	 */
+	void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT messenger, const VkAllocationCallbacks* pAllocator);
 
 	/**
 	 * Start the application.
@@ -192,9 +198,9 @@ public:
 	void createInstance();
 
 	/**
-	 * Setup debug callback.
+	 * Setup debug messenger.
 	 */
-	void setupDebugCallback();
+	void setupDebugMessenger();
 
 	/**
 	 * Create a window surface using GLFW.
@@ -374,7 +380,11 @@ public:
 	bool checkValidationLayerSupport();
 
 	/**
-	 * Debug callback.
+	 * Debug callback (VK_EXT_debug_utils).
 	 */
-	static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objType, uint64_t obj, size_t location, int32_t code, const char* layerPrefix, const char* msg, void* userData);
+	static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
+		VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+		VkDebugUtilsMessageTypeFlagsEXT messageType,
+		const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+		void* pUserData);
 };

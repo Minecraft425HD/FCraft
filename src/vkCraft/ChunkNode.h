@@ -13,7 +13,7 @@ class ChunkNode
 {
 public:
 	/**
-	 * Uninitiaalized state, the node has no chunk data and geometry.
+	 * Uninitialized state, the node has no chunk data and geometry.
 	 */
 	static const int UNINITIALIZED = 0;
 
@@ -23,7 +23,7 @@ public:
 	static const int DATA = 1;
 
 	/**
-	 * The node and chunk and geometry data.
+	 * The node has chunk and geometry data.
 	 */
 	static const int GEOMETRY = 2;
 
@@ -38,7 +38,15 @@ public:
 	static const int BACK = 3;
 	static const int UP = 4;
 	static const int DOWN = 5;
-	
+
+	/**
+	 * Maps each direction index to its opposite.
+	 * OPPOSITE[LEFT]=RIGHT, OPPOSITE[RIGHT]=LEFT,
+	 * OPPOSITE[FRONT]=BACK, OPPOSITE[BACK]=FRONT,
+	 * OPPOSITE[UP]=DOWN,   OPPOSITE[DOWN]=UP
+	 */
+	static const int OPPOSITE[6];
+
 	/**
 	 * The world offset per block for each possible direction.
 	 */
@@ -92,9 +100,14 @@ public:
 	ChunkNode(glm::ivec3 _index, int _seed);
 
 	/**
-	 * Get geometries from this node and its neighbors recursively.
+	 * Collect this node and its neighbors recursively into a flat list.
 	 */
 	void getNodes(std::vector<ChunkNode*> *nodes, int recursive = 0);
+
+	/**
+	 * Get the geometry for this node, generating it first if necessary.
+	 */
+	Geometry* getGeometry(ChunkWorld *world);
 
 	/**
 	 * Get geometries from this node and its neighbors recursively.
@@ -138,11 +151,6 @@ public:
 	 * If it still has no chunk data it will generate it first.
 	 */
 	void generateGeometry(ChunkWorld *world);
-
-	/**
-	 * Get geometry of this node.
-	 */
-	Geometry* getGeometry(ChunkWorld *world);
 
 	/**
 	 * Dispose all the geometries attached to this node recursively.
