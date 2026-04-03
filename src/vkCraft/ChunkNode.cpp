@@ -21,7 +21,7 @@ void ChunkNode::getNodes(std::vector<ChunkNode*> *nodes, int recursive)
 			break;
 		}
 	}
-	
+
 	if (found == false)
 	{
 		nodes->push_back(this);
@@ -141,7 +141,7 @@ void ChunkNode::searchNeighbors()
 			neighbors[ChunkNode::LEFT] = left;
 		}
 	}
-	
+
 	if (neighbors[ChunkNode::RIGHT] == nullptr)
 	{
 		nodes.clear();
@@ -190,7 +190,6 @@ void ChunkNode::searchNeighbors()
 			neighbors[ChunkNode::DOWN] = down;
 		}
 	}
-	
 }
 
 ChunkNode* ChunkNode::searchNode(glm::ivec3 index, std::vector<ChunkNode*> *nodes)
@@ -201,7 +200,7 @@ ChunkNode* ChunkNode::searchNode(glm::ivec3 index, std::vector<ChunkNode*> *node
 	}
 
 	nodes->push_back(this);
-	
+
 	//Check if it is one of its neighbors
 	for (unsigned int i = 0; i < 6; i++)
 	{
@@ -280,6 +279,11 @@ void ChunkNode::dispose(VkDevice &device)
 	{
 		if (neighbors[i] != nullptr && neighbors[i]->state > DATA)
 		{
+			// Null the back-pointer before deleting to prevent use-after-free.
+			// Neighbor directions are paired: LEFT(0)<->RIGHT(1), FRONT(2)<->BACK(3), UP(4)<->DOWN(5)
+			int opposite = i ^ 1;
+			neighbors[i]->neighbors[opposite] = nullptr;
+
 			neighbors[i]->dispose(device);
 			delete neighbors[i];
 			neighbors[i] = nullptr;

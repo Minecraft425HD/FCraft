@@ -31,7 +31,8 @@ void Chunk::generate(int seed)
 				//Generate clouds
 				if (h == CLOUD_LEVEL)
 				{
-					int cloud = getHeight(v, w, seed * 2) * 3;
+					// Use long long to avoid integer overflow when seed is large
+					int cloud = getHeight(v, w, (int)((long long)seed * 2)) * 3;
 
 					if (cloud > CLOUD_LEVEL)
 					{
@@ -54,7 +55,7 @@ int Chunk::getHeight(int x, int y, int seed, double noiseScale)
 	int octaves = 6;
 
 	//Loop through the octaves
-	for (int a = 0; a < octaves - 1; a++)
+	for (int a = 0; a < octaves; a++)
 	{
 		//Increase the frequency with every loop of the octave.
 		double frequency = pow(frequencyPower, a);
@@ -71,7 +72,7 @@ int Chunk::getHeight(int x, int y, int seed, double noiseScale)
 
 	return (int)(((noise + 1) / 2.0) * (maxHeight - minHeight));
 }
-	
+
 double Chunk::interpolate(double a, double b, double x)
 {
 	double ft = x * 3.1415927;

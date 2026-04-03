@@ -25,27 +25,21 @@ class ChunkGeometry : public Geometry
 public:
 	/**
 	 * List of UVs for the blocks.
+	 * Index matches Chunk block constants (GRASS=1, SAND=2, etc.)
 	 */
-	const glm::vec4 BLOCK_UVS[8] =
-	{
-		calculateUV(12, 14, 16), //EMPTY
-		calculateUV(0, 0, 16), //GRASS
-		calculateUV(2, 1, 16), //SAND
-		calculateUV(1, 0, 16), //STONE
-		calculateUV(2, 0, 16), //DIRT
-		calculateUV(15, 13, 16), //WATER
-		calculateUV(15, 15, 16), //LAVA
-		calculateUV(2, 4, 16) //CLOUD
-	};
+	static const glm::vec4 BLOCK_UVS[8];
 
 	/**
 	* List of UVs for the foliage.
 	*/
-	const glm::vec4 FOLIAGE_UVS[2] =
-	{
-		calculateUV(12, 0, 16), //FLOWER_RED
-		calculateUV(13, 0, 16) //FLOWER_YELLOW
-	};
+	static const glm::vec4 FOLIAGE_UVS[2];
+
+	/**
+	 * Safe UV lookup: maps any block value to a valid UV.
+	 * Foliage blocks (>=500) are mapped to FOLIAGE_UVS.
+	 * Out-of-range values fall back to BLOCK_UVS[0] (EMPTY UV).
+	 */
+	static glm::vec4 getBlockUV(int value);
 
 	/**
 	 * Calculate the UV for the element x, y in a grid with size.

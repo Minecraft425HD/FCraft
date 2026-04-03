@@ -1,51 +1,32 @@
 #pragma once
 
-#include <iostream>
-
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
-
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
-#include <glm/gtc/constants.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/constants.hpp>
+
+#include <GLFW/glfw3.h>
+#include <cmath>
 
 #include "Camera.h"
 
-/**
- * A camera that can be controlled for FPS views.
- */
 class FirstPersonCamera : public Camera
 {
 public:
-	/**
-	 * Camera orientation vector, x is horizontal orientation and y is vertical orientation.
-	 */
-	glm::vec2 orientation;
+	glm::dvec2 last = { 0.0, 0.0 };
+	glm::dvec2 delta = { 0.0, 0.0 };
+	glm::vec3 orientation = { 0.0f, 0.0f, 0.0f };
 
 	/**
-	 * Stores last mouse position.
+	 * Tracks whether last cursor position has been initialized.
+	 * Prevents a large camera jump on the very first frame.
 	 */
-	glm::vec2 last;
-
-	/**
-	 * Mouse movement delta.
-	 */
-	glm::vec2 delta;
+	bool lastInitialized = false;
 
 	FirstPersonCamera();
 
-	/**
-	 * Update the camera movement from user input.
-	 */
 	void update(GLFWwindow *window, double time);
-
-	/**
-	 * Update the camera matrix.
-	 *
-	 * Consider the camera orientation and translation only.
-	 */
 	void updateMatrix();
 };

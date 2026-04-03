@@ -10,12 +10,11 @@ void FirstPersonCamera::update(GLFWwindow *window, double time)
 	double moveSpeed = 10.0 * time;
 	double lookSpeed = 1.0 * time;
 
-	double pi = 3.14159265359;
-	double pid2 = pi / 2.0;
-		
+	const double pi = glm::pi<double>();
+
 	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
 	{
-		moveSpeed *= 3.0f;
+		moveSpeed *= 3.0;
 	}
 
 	//Camera move
@@ -30,7 +29,7 @@ void FirstPersonCamera::update(GLFWwindow *window, double time)
 		position.x += moveSpeed * std::sin(orientation.x);
 	}
 
-	float lateral = orientation.x + pid2;
+	double lateral = orientation.x + pi / 2.0;
 
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
 	{
@@ -54,6 +53,15 @@ void FirstPersonCamera::update(GLFWwindow *window, double time)
 
 	double x, y;
 	glfwGetCursorPos(window, &x, &y);
+
+	// Initialize last position on first frame to prevent a large camera jump
+	if (!lastInitialized)
+	{
+		last.x = x;
+		last.y = y;
+		lastInitialized = true;
+	}
+
 	delta.x = x - last.x;
 	delta.y = y - last.y;
 	last.x = x;
@@ -83,17 +91,18 @@ void FirstPersonCamera::update(GLFWwindow *window, double time)
 	{
 		orientation.y -= lookSpeed;
 	}
-		
-	//Limit vertical orientation
-	if(orientation.y < -1.57f)
+
+	//Limit vertical orientation to avoid gimbal lock at poles
+	const float halfPi = glm::half_pi<float>();
+	if (orientation.y < -halfPi)
 	{
-		orientation.y = -1.57f;
+		orientation.y = -halfPi;
 	}
-	else if(orientation.y > 1.57f)
+	else if (orientation.y > halfPi)
 	{
-		orientation.y = 1.57f;
+		orientation.y = halfPi;
 	}
-		
+
 	updateMatrix();
 }
 
