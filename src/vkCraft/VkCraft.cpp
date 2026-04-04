@@ -96,7 +96,11 @@ void VkCraft::update()
 
 void VkCraft::render()
 {
-	//Acquire image first, then reset fence to avoid deadlock on VK_ERROR_OUT_OF_DATE_KHR
+	// Wait for the previous frame using this slot to finish.
+	// This ensures imageAvailableSemaphores[currentFrame] is no longer pending
+	// before we pass it to vkAcquireNextImageKHR again.
+	vkWaitForFences(device.logical, 1, &inFlightFences[currentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
+
 	uint32_t imageIndex;
 	VkResult result = vkAcquireNextImageKHR(device.logical, swapChain, std::numeric_limits<uint64_t>::max(), imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
 
@@ -110,8 +114,7 @@ void VkCraft::render()
 		throw std::runtime_error("vkCraft: Failed to acquire swap chain image!");
 	}
 
-	//Wait for fences before starting to draw a frame
-	vkWaitForFences(device.logical, 1, &inFlightFences[currentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
+	// Reset fence only after confirmed we will submit work this frame
 	vkResetFences(device.logical, 1, &inFlightFences[currentFrame]);
 
 	//Create list of semaphores to wait for and signal to
