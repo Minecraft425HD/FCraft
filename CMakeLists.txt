@@ -113,9 +113,19 @@ target_link_libraries(libvkCraft
     ${Vulkan_LIBRARIES}
 )
 
-add_custom_command(TARGET vkCraft
-    POST_BUILD
-    COMMAND cd ${CMAKE_SOURCE_DIR}/src/scripts && python3 compile_shaders.py
+# Compile shaders: block.vert -> shader/vert.spv, block.frag -> shader/frag.spv
+# Output goes into build/shader/ so the executable finds them at runtime
+add_custom_command(TARGET vkCraft POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/shader
+    COMMAND Vulkan::glslangValidator
+        --target-env vulkan1.0
+        -o ${CMAKE_BINARY_DIR}/shader/vert.spv
+        ${CMAKE_SOURCE_DIR}/src/shaders/block.vert
+    COMMAND Vulkan::glslangValidator
+        --target-env vulkan1.0
+        -o ${CMAKE_BINARY_DIR}/shader/frag.spv
+        ${CMAKE_SOURCE_DIR}/src/shaders/block.frag
+    COMMENT "Compiling shaders"
 )
 
 add_custom_command(TARGET vkCraft
