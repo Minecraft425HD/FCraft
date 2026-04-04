@@ -37,8 +37,7 @@ shaderBuildDirectory = '../../bin/shaders'
 #endregion
 
 def CompileShaders():
-    if os.path.exists(shaderBuildDirectory) == False:
-        subprocess.run(f"mkdir {shaderBuildDirectory}", shell=True)
+    os.makedirs(shaderBuildDirectory, exist_ok=True)
 
     for fileName in os.listdir(shaderSourceDirectory):
         sourceFilePath = os.path.join(shaderSourceDirectory, fileName)

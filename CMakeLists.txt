@@ -5,6 +5,16 @@ project(vkCraft)
 find_package(glfw3 REQUIRED)
 find_package(Vulkan REQUIRED)
 
+# Auto-download stb_image.h (header-only, no build needed)
+include(FetchContent)
+FetchContent_Declare(
+    stb
+    URL https://raw.githubusercontent.com/nothings/stb/master/stb_image.h
+    DOWNLOAD_NO_EXTRACT TRUE
+    DOWNLOAD_DIR ${CMAKE_SOURCE_DIR}/src/include
+)
+FetchContent_MakeAvailable(stb)
+
 # ---------------------------------------------------------------------------
 # Homebrew prefix detection (macOS Apple Silicon & Intel)
 # ---------------------------------------------------------------------------
