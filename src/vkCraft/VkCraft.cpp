@@ -364,6 +364,10 @@ void VkCraft::createInstance()
 	createInfo.pApplicationInfo = &appInfo;
 
 	std::vector<const char*> extensions = getRequiredExtensions();
+	// macOS/MoltenVK: Vulkan SDK >= 1.3.216 requires portability enumeration
+	extensions.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
+	extensions.push_back("VK_KHR_get_physical_device_properties2");
+	createInfo.flags = VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
 	createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
 	createInfo.ppEnabledExtensionNames = extensions.data();
 
@@ -499,8 +503,11 @@ void VkCraft::createLogicalDevice()
 	createInfo.pQueueCreateInfos = queueCreateInfos.data();
 	createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
 	createInfo.pEnabledFeatures = &deviceFeatures;
-	createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
-	createInfo.ppEnabledExtensionNames = deviceExtensions.data();
+	// macOS/MoltenVK requires the portability subset extension
+	std::vector<const char*> activeDeviceExtensions(deviceExtensions.begin(), deviceExtensions.end());
+	activeDeviceExtensions.push_back("VK_KHR_portability_subset");
+	createInfo.enabledExtensionCount = static_cast<uint32_t>(activeDeviceExtensions.size());
+	createInfo.ppEnabledExtensionNames = activeDeviceExtensions.data();
 
 	if (ENABLE_VALIDATION_LAYERS)
 	{
