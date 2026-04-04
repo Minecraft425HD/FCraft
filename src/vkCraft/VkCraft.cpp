@@ -96,11 +96,7 @@ void VkCraft::update()
 
 void VkCraft::render()
 {
-	//Wait for fences before starting to draw a frame
-	vkWaitForFences(device.logical, 1, &inFlightFences[currentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
-	vkResetFences(device.logical, 1, &inFlightFences[currentFrame]);
-
-	//Render next image and set image available semaphore down
+	//Acquire image first, then reset fence to avoid deadlock on VK_ERROR_OUT_OF_DATE_KHR
 	uint32_t imageIndex;
 	VkResult result = vkAcquireNextImageKHR(device.logical, swapChain, std::numeric_limits<uint64_t>::max(), imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
 
@@ -113,6 +109,10 @@ void VkCraft::render()
 	{
 		throw std::runtime_error("vkCraft: Failed to acquire swap chain image!");
 	}
+
+	//Wait for fences before starting to draw a frame
+	vkWaitForFences(device.logical, 1, &inFlightFences[currentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
+	vkResetFences(device.logical, 1, &inFlightFences[currentFrame]);
 
 	//Create list of semaphores to wait for and signal to
 	VkSemaphore waitSemaphores[] = { imageAvailableSemaphores[currentFrame] };
@@ -230,12 +230,12 @@ void VkCraft::initialize()
 
 void VkCraft::recreateSwapChain()
 {
-	int width, height;
-	glfwGetFramebufferSize(window, &width, &height);
-
-	if (width == 0 || height == 0)
+	// Wait while window is minimized
+	int width = 0, height = 0;
+	while (width == 0 || height == 0)
 	{
-		return;
+		glfwGetFramebufferSize(window, &width, &height);
+		glfwWaitEvents();
 	}
 
 	vkDeviceWaitIdle(device.logical);
@@ -430,8 +430,7 @@ void VkCraft::createSurface()
 void VkCraft::pickPhysicalDevice()
 {
 	uint32_t count = 0;
-	vkEnumeratePhysicalDevices(instance, &count, nullptr);
-
+	// FIX: call enumerate only twice (once for count, once for data) - original called it 3x
 	if (vkEnumeratePhysicalDevices(instance, &count, nullptr) != VK_SUCCESS || count == 0)
 	{
 		throw std::runtime_error("vkCraft: No GPU with Vulkan support found");
@@ -476,7 +475,7 @@ void VkCraft::createLogicalDevice()
 	QueueFamilyIndices indices = device.getQueueFamilyIndices(surface);
 
 	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-	// Use uint32_t to match the type of graphicsFamily / presentFamily
+	// FIX: use uint32_t to match Vulkan queue family index type (avoids narrowing from uint32_t to int)
 	std::set<uint32_t> uniqueQueueFamilies = {
 		static_cast<uint32_t>(indices.graphicsFamily),
 		static_cast<uint32_t>(indices.presentFamily)
@@ -548,7 +547,8 @@ void VkCraft::createSwapChain()
 	createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
 	QueueFamilyIndices indices = device.getQueueFamilyIndices(surface);
-	uint32_t queueFamilyIndices[] = { (uint32_t)indices.graphicsFamily, (uint32_t)indices.presentFamily };
+	// FIX: use static_cast instead of C-style cast for type safety
+	uint32_t queueFamilyIndices[] = { static_cast<uint32_t>(indices.graphicsFamily), static_cast<uint32_t>(indices.presentFamily) };
 
 	if (indices.graphicsFamily != indices.presentFamily)
 	{
@@ -1050,21 +1050,25 @@ void VkCraft::createSyncObjects()
 	}
 }
 
-bool VkCraft::isPhysicalDeviceSuitable(VkPhysicalDevice device)
+bool VkCraft::isPhysicalDeviceSuitable(VkPhysicalDevice physicalDevice)
 {
-	QueueFamilyIndices indices = this->device.getQueueFamilyIndices(surface);
+	// FIX: use the passed physicalDevice parameter to get queue families,
+	// not this->device.physical which is VK_NULL_HANDLE during enumeration
+	Device tempDevice;
+	tempDevice.physical = physicalDevice;
+	QueueFamilyIndices indices = tempDevice.getQueueFamilyIndices(surface);
 
-	bool extensionsSupported = checkDeviceExtensionSupport(device);
+	bool extensionsSupported = checkDeviceExtensionSupport(physicalDevice);
 
 	bool swapChainAdequate = false;
 	if (extensionsSupported)
 	{
-		SwapChainSupportDetails swapChainSupport = querySwapChainSupport(device);
+		SwapChainSupportDetails swapChainSupport = querySwapChainSupport(physicalDevice);
 		swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
 	}
 
 	VkPhysicalDeviceFeatures supportedFeatures;
-	vkGetPhysicalDeviceFeatures(device, &supportedFeatures);
+	vkGetPhysicalDeviceFeatures(physicalDevice, &supportedFeatures);
 
 	return indices.isComplete() && extensionsSupported && swapChainAdequate && supportedFeatures.samplerAnisotropy;
 }
@@ -1105,7 +1109,8 @@ VkSurfaceFormatKHR VkCraft::chooseSwapSurfaceFormat(const std::vector<VkSurfaceF
 	return availableFormats[0];
 }
 
-VkPresentModeKHR VkCraft::chooseSwapPresentMode(const std::vector<VkPresentModeKHR> availablePresentModes)
+// FIX: pass by const reference to avoid unnecessary vector copy
+VkPresentModeKHR VkCraft::chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes)
 {
 	VkPresentModeKHR bestMode = VK_PRESENT_MODE_FIFO_KHR;
 
@@ -1391,12 +1396,13 @@ void VkCraft::createTextureImage(const char *fname)
 
 	//Load image
 	stbi_uc* pixels = stbi_load(fname, &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
-	VkDeviceSize imageSize = texWidth * texHeight * 4;
 
 	if (!pixels)
 	{
 		throw std::runtime_error("vkCraft: Failed to load texture image!");
 	}
+
+	VkDeviceSize imageSize = texWidth * texHeight * 4;
 
 	//Create buffer to transfer to GPU memory
 	VkBuffer stagingBuffer;
