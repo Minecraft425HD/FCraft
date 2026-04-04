@@ -104,7 +104,7 @@ public:
 	//Object3D and camera
 	Object3D model;
 	FirstPersonCamera camera;
-	glm::ivec3 cameraIndex = { 0, 0, 0 };
+	glm::ivec3 cameraIndex = { INT_MAX, INT_MAX, INT_MAX }; // sentinel: forces world gen on first frame
 	UniformBufferObject uniformBuf;
 	double time = 0.0, delta = 0.0;
 
