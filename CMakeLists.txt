@@ -1,7 +1,13 @@
 cmake_minimum_required(VERSION 3.10...3.27)
 
-project(vkCraft)
+project(vkCraft CXX)
 
+# C++17 required for std::optional, if-constexpr, structured bindings, etc.
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+find_package(Threads REQUIRED)
 find_package(glfw3 REQUIRED)
 find_package(Vulkan REQUIRED)
 
@@ -105,12 +111,14 @@ target_link_libraries(vkCraft
     glfw
     ${TINYOBJ_LINK}
     ${Vulkan_LIBRARIES}
+    Threads::Threads
 )
 
 target_link_libraries(libvkCraft
     glfw
     ${TINYOBJ_LINK}
     ${Vulkan_LIBRARIES}
+    Threads::Threads
 )
 
 # Compile shaders: block.vert -> shader/vert.spv, block.frag -> shader/frag.spv

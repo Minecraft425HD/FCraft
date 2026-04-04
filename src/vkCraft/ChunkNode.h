@@ -1,5 +1,7 @@
 #pragma once
 
+#include <atomic>
+#include <mutex>
 #include <algorithm>
 #include "Device.h"
 #include "ChunkWorld.h"
@@ -12,129 +14,75 @@ class ChunkWorld;
 class ChunkNode
 {
 public:
-	/**
-	 * Uninitialized state, the node has no chunk data and geometry.
-	 */
-	static const int UNINITIALIZED = 0;
+    // ── State constants ──────────────────────────────────────────────────────
+    static const int UNINITIALIZED = 0; ///< No chunk data, no geometry.
+    static const int DATA          = 1; ///< Chunk voxel data is ready.
+    static const int GEOMETRY      = 2; ///< CPU mesh is ready, pending GPU upload.
 
-	/**
-	 * The node only has chunk data.
-	 */
-	static const int DATA = 1;
+    // ── Direction constants ───────────────────────────────────────────────────
+    /*  left  = -x, right = +x
+        front = -z, back  = +z
+        up    = +y, down  = -y  */
+    static const int LEFT  = 0;
+    static const int RIGHT = 1;
+    static const int FRONT = 2;
+    static const int BACK  = 3;
+    static const int UP    = 4;
+    static const int DOWN  = 5;
 
-	/**
-	 * The node has chunk and geometry data.
-	 */
-	static const int GEOMETRY = 2;
+    // ── Data members ─────────────────────────────────────────────────────────
+    Chunk         chunk;
+    ChunkGeometry *geometry;
 
-	/*
-	 * left is - x, right + x
-	 * front is - z, back is + z
-	 * up is + y, down is - y
-	 */
-	static const int LEFT = 0;
-	static const int RIGHT = 1;
-	static const int FRONT = 2;
-	static const int BACK = 3;
-	static const int UP = 4;
-	static const int DOWN = 5;
+    /**
+     * Node state. Written atomically so worker threads can transition
+     * UNINITIALIZED→DATA→GEOMETRY without a coarse lock.
+     */
+    std::atomic<int> state { UNINITIALIZED };
 
-	/**
-	 * Chunk data.
-	 */
-	Chunk chunk;
+    /**
+     * Mutex that serialises generateData() and generateGeometry() calls so
+     * that two worker threads don't mesh the same node concurrently.
+     */
+    std::mutex generationMutex;
 
-	/**
-	 * Geometry to represent this chunk.
-	 */
-	ChunkGeometry *geometry;
+    int        seed;
+    glm::ivec3 index;
+    int        timestamp = -1;
 
-	/**
-	 * Node state.
-	 */
-	int state;
+    /** Pointers to the six direct neighbours (null until generated). */
+    ChunkNode *neighbors[6] = { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr };
 
-	/**
-	 * World seed.
-	 */
-	int seed;
+    // ── Constructor / destructor ──────────────────────────────────────────────
+    ChunkNode(glm::ivec3 _index, int _seed);
 
-	/**
-	 * Node index relative to the root.
-	 */
-	glm::ivec3 index;
+    // ── Graph traversal ───────────────────────────────────────────────────────
+    void getNodes(std::vector<ChunkNode*> *nodes, int recursive = 0);
+    void getGeometries(std::vector<Geometry*> *geometries, ChunkWorld *world, int recursive = 0);
 
-	/**
-	 * Numeric timestamp, that can be compared with a world timestamp and updated on generation.
-	 *
-	 * Can be used to avoid recursive propagation of updates in nodes.
-	 */
-	int timestamp = -1;
+    // ── Neighbour management ──────────────────────────────────────────────────
+    void generateNeighbors(int recursive = 0);
+    ChunkNode* searchNode(glm::ivec3 index, std::vector<ChunkNode*> *nodes);
+    void searchNeighbors();
+    ChunkNode* getNeighborPath(int path[], int size);
 
-	/**
-	 * Pointer to neighbor chunks.
-	 */
-	ChunkNode *neighbors[6] = { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr };
+    // ── Data & geometry generation ────────────────────────────────────────────
+    /**
+     * Generate voxel data for this node (thread-safe, idempotent).
+     * Safe to call from a worker thread; each node has independent data.
+     */
+    void generateData();
 
-	ChunkNode(glm::ivec3 _index, int _seed);
+    /**
+     * Generate CPU mesh for this node (thread-safe, idempotent).
+     * Requires all neighbour nodes to have at least DATA state so that
+     * cross-chunk face-culling queries succeed.
+     */
+    void generateGeometry(ChunkWorld *world);
 
-	/**
-	 * Get geometries from this node and its neighbors recursively.
-	 */
-	void getNodes(std::vector<ChunkNode*> *nodes, int recursive = 0);
+    /** Convenience wrapper used by the old synchronous path. */
+    Geometry* getGeometry(ChunkWorld *world);
 
-	/**
-	 * Get geometries from this node and its neighbors recursively.
-	 */
-	void getGeometries(std::vector<Geometry*> *geometries, ChunkWorld *world, int recursive = 0);
-
-	/**
-	 * Generate neighbors of this node and assign direct relations between nodes.
-	 *
-	 * Before creating the nodes it searches for already known nodes.
-	 */
-	void generateNeighbors(int recursive = 0);
-
-	/**
-	 * Try to get node from its index, recursively.
-	 */
-	ChunkNode* searchNode(glm::ivec3 index, std::vector<ChunkNode*> *nodes);
-
-	/**
-	 * Search neighbor connections using already known relations, should be called before generating neighbors locally.
-	 *
-	 * Only searches second order relations, should be enough to avoid repetitions.
-	 */
-	void searchNeighbors();
-
-	/**
-	 * Get element from path if it is reachable.
-	 *
-	 * Path is described as directional jumps in an array.
-	 */
-	ChunkNode* getNeighborPath(int path[], int size);
-
-	/**
-	* Generate data for this node.
-	*/
-	void generateData();
-
-	/**
-	 * Generate geometry for this node.
-	 *
-	 * If it still has no chunk data, generate it first.
-	 */
-	void generateGeometry(ChunkWorld *world);
-
-	/**
-	 * Get geometry of this node.
-	 */
-	Geometry* getGeometry(ChunkWorld *world);
-
-	/**
-	 * Dispose all the geometries attached to this node recursively.
-	 *
-	 * Checks if the geometry has vulkan buffers and also disposes them.
-	 */
-	void dispose(VkDevice &device);
+    // ── Cleanup ───────────────────────────────────────────────────────────────
+    void dispose(VkDevice &device);
 };

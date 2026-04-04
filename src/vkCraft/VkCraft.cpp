@@ -61,25 +61,72 @@ void VkCraft::update()
 
 	glm::ivec3 index = world.getIndex(camera.position);
 
-	//Create geometries buffers
 	if (index != cameraIndex)
 	{
 		double t = glfwGetTime();
 
-		int distance = RENDER_DISTANCE;
-		std::vector<Geometry*> geometries = world.getGeometries(camera.position, distance);
+		// ── Step 1: graph traversal (main thread, fast) ──────────────────────
+		// Build the full neighbour graph for the render distance and register
+		// every node in world's flat registry so worker threads can look them
+		// up via world.getBlock() without graph traversal.
+		std::vector<ChunkNode*> chunkNodes = world.collectNodes(camera.position, RENDER_DISTANCE);
 
-		for (size_t i = 0; i < geometries.size(); i++)
+		// ── Step 2: parallel DATA generation ────────────────────────────────
+		// Each ChunkNode owns its own chunk.data – no shared writes.
+		// generateData() is idempotent (atomic CAS guards double-execution).
 		{
-			createGeometryBuffers(geometries[i]);
-		}
-		
-		std::cout << "VkCraft: Got " << geometries.size() << " geometries." << std::endl;
+			std::vector<std::future<void>> futures;
+			futures.reserve(chunkNodes.size());
 
+			for (ChunkNode *node : chunkNodes)
+			{
+				if (node->state.load() < ChunkNode::DATA)
+				{
+					futures.push_back(threadPool->enqueue([node]() {
+						node->generateData();
+					}));
+				}
+			}
+			// Wait for all data to be ready before meshing.
+			for (auto &f : futures) f.get();
+		}
+
+		// ── Step 3: parallel GEOMETRY generation ────────────────────────────
+		// All nodes now have DATA. generateGeometry() calls world.getBlock()
+		// which is thread-safe (reads from registry with a mutex).
+		// generateGeometry() is also idempotent (mutex + atomic state guard).
+		{
+			std::vector<std::future<void>> futures;
+			futures.reserve(chunkNodes.size());
+
+			for (ChunkNode *node : chunkNodes)
+			{
+				if (node->state.load() < ChunkNode::GEOMETRY)
+				{
+					futures.push_back(threadPool->enqueue([node, this]() {
+						node->generateGeometry(&world);
+					}));
+				}
+			}
+			for (auto &f : futures) f.get();
+		}
+
+		// ── Step 4: GPU upload (main thread only) ────────────────────────────
+		// Vulkan buffer creation must happen on the thread that owns the device.
+		world.geometries.clear();
+		for (ChunkNode *node : chunkNodes)
+		{
+			createGeometryBuffers(node->geometry);
+			world.geometries.push_back(node->geometry);
+		}
+
+		std::cout << "VkCraft: Loaded " << chunkNodes.size() << " chunks in "
+		          << (glfwGetTime() - t) << "s  ("
+		          << threadPool->threadCount() << " worker threads)\n";
+
+		// ── Step 5: Rebuild draw commands ────────────────────────────────────
 		recreateRenderingCommandBuffers();
 		cameraIndex = index;
-
-		std::cout << "VkCraft: Get world geometries took " << (glfwGetTime() - t) << "s." << std::endl;
 	}
 
 	//Update UBO
@@ -232,6 +279,15 @@ void VkCraft::initialize()
 
 	//Semaphores
 	createSyncObjects();
+
+	// ── Thread pool ───────────────────────────────────────────────────────────
+	// Use all hardware threads minus one (keep one for the main/render thread).
+	// Fall back to 1 worker if only a single core is detected.
+	unsigned int hw = std::thread::hardware_concurrency();
+	unsigned int workers = (hw > 1) ? (hw - 1) : 1;
+	threadPool = std::make_unique<ThreadPool>(workers);
+	std::cout << "VkCraft: ThreadPool started with " << workers << " worker threads "
+	          << "(hardware_concurrency=" << hw << ")\n";
 }
 
 void VkCraft::recreateSwapChain()

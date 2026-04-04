@@ -33,6 +33,11 @@
 #include "Object3D.h"
 #include "FirstPersonCamera.h"
 #include "ChunkWorld.h"
+#include "ThreadPool.h"
+
+#include <thread>
+#include <future>
+#include <memory>
 
 class VkCraft
 {
@@ -108,9 +113,16 @@ public:
 	UniformBufferObject uniformBuf;
 	double time = 0.0, delta = 0.0;
 
-	const int WORLD_SEED = 349995;
+	const int WORLD_SEED      = 349995;
 	const int RENDER_DISTANCE = 5;
 	ChunkWorld world = ChunkWorld(WORLD_SEED);
+
+	/**
+	 * Worker thread pool for parallel chunk-data and geometry generation.
+	 * Initialised in initialize() once hardware_concurrency is known.
+	 * GPU uploads are never submitted here – only CPU-side work.
+	 */
+	std::unique_ptr<ThreadPool> threadPool;
 
 	/** 
 	 * Use LunarG validation layers provided by the SDK.

@@ -2,291 +2,228 @@
 
 ChunkNode::ChunkNode(glm::ivec3 _index, int _seed)
 {
-	index = _index;
-	seed = _seed;
-	state = UNINITIALIZED;
-	chunk.setIndex(_index);
-	geometry = new ChunkGeometry();
-	generateData();
+    index    = _index;
+    seed     = _seed;
+    state    = UNINITIALIZED;
+    chunk.setIndex(_index);
+    geometry = new ChunkGeometry();
+    // Data generation is deferred – the caller (ChunkWorld / VkCraft) drives
+    // it explicitly so it can be offloaded to worker threads.
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Graph traversal
+// ─────────────────────────────────────────────────────────────────────────────
 
 void ChunkNode::getNodes(std::vector<ChunkNode*> *nodes, int recursive)
 {
-	bool found = false;
-	for (size_t i = 0; i < nodes->size(); i++)
-	{
-		if ((*nodes)[i]->index == index)
-		{
-			found = true;
-			break;
-		}
-	}
+    bool found = false;
+    for (size_t i = 0; i < nodes->size(); i++)
+    {
+        if ((*nodes)[i]->index == index) { found = true; break; }
+    }
 
-	if (found == false)
-	{
-		nodes->push_back(this);
-	}
+    if (!found)
+        nodes->push_back(this);
 
-	if (recursive > 0)
-	{
-		generateNeighbors();
-
-		for (unsigned int i = 0; i < 6; i++)
-		{
-			neighbors[i]->getNodes(nodes, recursive - 1);
-		}
-	}
+    if (recursive > 0)
+    {
+        generateNeighbors();
+        for (unsigned int i = 0; i < 6; i++)
+            neighbors[i]->getNodes(nodes, recursive - 1);
+    }
 }
 
 Geometry* ChunkNode::getGeometry(ChunkWorld *world)
 {
-	if (state < GEOMETRY)
-	{
-		generateGeometry(world);
-	}
-
-	return geometry;
+    if (state.load() < GEOMETRY)
+        generateGeometry(world);
+    return geometry;
 }
 
 void ChunkNode::getGeometries(std::vector<Geometry*> *geometries, ChunkWorld *world, int recursive)
 {
-	if(state < GEOMETRY)
-	{
-		generateGeometry(world);
-	}
+    if (state.load() < GEOMETRY)
+        generateGeometry(world);
 
-	//Check if geometries contains geometry — if it does not, add new
-	if (std::find(geometries->begin(), geometries->end(), geometry) == geometries->end())
-	{
-		geometries->push_back(geometry);
-	}
-	else
-	{
-		return;
-	}
+    if (std::find(geometries->begin(), geometries->end(), geometry) == geometries->end())
+        geometries->push_back(geometry);
+    else
+        return;
 
-	if (recursive > 0)
-	{
-		generateNeighbors();
-
-		for (unsigned int i = 0; i < 6; i++)
-		{
-			neighbors[i]->getGeometries(geometries, world, recursive - 1);
-		}
-	}
+    if (recursive > 0)
+    {
+        generateNeighbors();
+        for (unsigned int i = 0; i < 6; i++)
+            neighbors[i]->getGeometries(geometries, world, recursive - 1);
+    }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Neighbour management
+// ─────────────────────────────────────────────────────────────────────────────
 
 void ChunkNode::generateNeighbors(int recursive)
 {
-	searchNeighbors();
+    searchNeighbors();
 
-	//X - 1 Left
-	if (neighbors[ChunkNode::LEFT] == nullptr)
-	{
-		neighbors[ChunkNode::LEFT] = new ChunkNode(glm::ivec3(index.x - 1, index.y, index.z), seed);
-		neighbors[ChunkNode::LEFT]->neighbors[ChunkNode::RIGHT] = this;
-	}
-	//X + 1 Right
-	if (neighbors[ChunkNode::RIGHT] == nullptr)
-	{
-		neighbors[ChunkNode::RIGHT] = new ChunkNode(glm::ivec3(index.x + 1, index.y, index.z), seed);
-		neighbors[ChunkNode::RIGHT]->neighbors[ChunkNode::LEFT] = this;
-	}
+    if (!neighbors[LEFT])
+    {
+        neighbors[LEFT]  = new ChunkNode({index.x - 1, index.y, index.z}, seed);
+        neighbors[LEFT]->neighbors[RIGHT] = this;
+    }
+    if (!neighbors[RIGHT])
+    {
+        neighbors[RIGHT] = new ChunkNode({index.x + 1, index.y, index.z}, seed);
+        neighbors[RIGHT]->neighbors[LEFT] = this;
+    }
+    if (!neighbors[UP])
+    {
+        neighbors[UP]   = new ChunkNode({index.x, index.y + 1, index.z}, seed);
+        neighbors[UP]->neighbors[DOWN] = this;
+    }
+    if (!neighbors[DOWN])
+    {
+        neighbors[DOWN]  = new ChunkNode({index.x, index.y - 1, index.z}, seed);
+        neighbors[DOWN]->neighbors[UP] = this;
+    }
+    if (!neighbors[FRONT])
+    {
+        neighbors[FRONT] = new ChunkNode({index.x, index.y, index.z - 1}, seed);
+        neighbors[FRONT]->neighbors[BACK] = this;
+    }
+    if (!neighbors[BACK])
+    {
+        neighbors[BACK]  = new ChunkNode({index.x, index.y, index.z + 1}, seed);
+        neighbors[BACK]->neighbors[FRONT] = this;
+    }
 
-	//Y + 1 Up
-	if (neighbors[ChunkNode::UP] == nullptr)
-	{
-		neighbors[ChunkNode::UP] = new ChunkNode(glm::ivec3(index.x, index.y + 1, index.z), seed);
-		neighbors[ChunkNode::UP]->neighbors[ChunkNode::DOWN] = this;
-	}
-	//Y - 1 Down
-	if (neighbors[ChunkNode::DOWN] == nullptr)
-	{
-		neighbors[ChunkNode::DOWN] = new ChunkNode(glm::ivec3(index.x, index.y - 1, index.z), seed);
-		neighbors[ChunkNode::DOWN]->neighbors[ChunkNode::UP] = this;
-	}
-
-	//Z - 1 Front
-	if (neighbors[ChunkNode::FRONT] == nullptr)
-	{
-		neighbors[ChunkNode::FRONT] = new ChunkNode(glm::ivec3(index.x, index.y, index.z - 1), seed);
-		neighbors[ChunkNode::FRONT]->neighbors[ChunkNode::BACK] = this;
-	}
-	//Z + 1 Back
-	if (neighbors[ChunkNode::BACK] == nullptr)
-	{
-		neighbors[ChunkNode::BACK] = new ChunkNode(glm::ivec3(index.x, index.y, index.z + 1), seed);
-		neighbors[ChunkNode::BACK]->neighbors[ChunkNode::FRONT] = this;
-	}
-
-	if (recursive > 0)
-	{
-		for (unsigned int i = 0; i < 6; i++)
-		{
-			neighbors[i]->generateNeighbors(recursive - 1);
-		}
-	}
+    if (recursive > 0)
+        for (unsigned int i = 0; i < 6; i++)
+            neighbors[i]->generateNeighbors(recursive - 1);
 }
 
 void ChunkNode::searchNeighbors()
 {
-	std::vector<ChunkNode*> nodes = std::vector<ChunkNode*>();
+    std::vector<ChunkNode*> visited;
 
-	if (neighbors[ChunkNode::LEFT] == nullptr)
-	{
-		nodes.clear();
-		ChunkNode* left = searchNode({index.x - 1, index.y, index.z}, &nodes);
-		if (left != nullptr)
-		{
-			neighbors[ChunkNode::LEFT] = left;
-		}
-	}
+    auto trySearch = [&](int dir, glm::ivec3 target) {
+        if (neighbors[dir] == nullptr)
+        {
+            visited.clear();
+            ChunkNode *found = searchNode(target, &visited);
+            if (found) neighbors[dir] = found;
+        }
+    };
 
-	if (neighbors[ChunkNode::RIGHT] == nullptr)
-	{
-		nodes.clear();
-		ChunkNode* right = searchNode({ index.x + 1, index.y, index.z }, &nodes);
-		if (right != nullptr)
-		{
-			neighbors[ChunkNode::RIGHT] = right;
-		}
-	}
-
-	if (neighbors[ChunkNode::FRONT] == nullptr)
-	{
-		nodes.clear();
-		ChunkNode* front = searchNode({ index.x, index.y, index.z - 1}, &nodes);
-		if (front != nullptr)
-		{
-			neighbors[ChunkNode::FRONT] = front;
-		}
-	}
-	if (neighbors[ChunkNode::BACK] == nullptr)
-	{
-		nodes.clear();
-		ChunkNode* back = searchNode({ index.x, index.y, index.z + 1}, &nodes);
-		if (back != nullptr)
-		{
-			neighbors[ChunkNode::BACK] = back;
-		}
-	}
-
-	if (neighbors[ChunkNode::UP] == nullptr)
-	{
-		nodes.clear();
-		ChunkNode* up = searchNode({ index.x, index.y + 1, index.z }, &nodes);
-		if (up != nullptr)
-		{
-			neighbors[ChunkNode::UP] = up;
-		}
-	}
-
-	if (neighbors[ChunkNode::DOWN] == nullptr)
-	{
-		nodes.clear();
-		ChunkNode* down = searchNode({ index.x, index.y - 1, index.z }, &nodes);
-		if (down != nullptr)
-		{
-			neighbors[ChunkNode::DOWN] = down;
-		}
-	}
+    trySearch(LEFT,  {index.x - 1, index.y,     index.z    });
+    trySearch(RIGHT, {index.x + 1, index.y,     index.z    });
+    trySearch(FRONT, {index.x,     index.y,     index.z - 1});
+    trySearch(BACK,  {index.x,     index.y,     index.z + 1});
+    trySearch(UP,    {index.x,     index.y + 1, index.z    });
+    trySearch(DOWN,  {index.x,     index.y - 1, index.z    });
 }
 
-ChunkNode* ChunkNode::searchNode(glm::ivec3 index, std::vector<ChunkNode*> *nodes)
+ChunkNode* ChunkNode::searchNode(glm::ivec3 target, std::vector<ChunkNode*> *nodes)
 {
-	if (std::find(nodes->begin(), nodes->end(), this) != nodes->end())
-	{
-		return nullptr;
-	}
+    if (std::find(nodes->begin(), nodes->end(), this) != nodes->end())
+        return nullptr;
 
-	nodes->push_back(this);
+    nodes->push_back(this);
 
-	//Check if it is one of its neighbors
-	for (size_t i = 0; i < 6; i++)
-	{
-		if (neighbors[i] != nullptr && neighbors[i]->index == index)
-		{
-			return neighbors[i];
-		}
-	}
+    for (size_t i = 0; i < 6; i++)
+        if (neighbors[i] && neighbors[i]->index == target)
+            return neighbors[i];
 
-	//Recursively search neighbors
-	for (size_t i = 0; i < 6; i++)
-	{
-		if (neighbors[i] != nullptr)
-		{
-			ChunkNode* node = neighbors[i]->searchNode(index, nodes);
-			if (node != nullptr)
-			{
-				return node;
-			}
-		}
-	}
+    for (size_t i = 0; i < 6; i++)
+        if (neighbors[i])
+        {
+            ChunkNode *n = neighbors[i]->searchNode(target, nodes);
+            if (n) return n;
+        }
 
-	return nullptr;
+    return nullptr;
 }
 
 ChunkNode* ChunkNode::getNeighborPath(int path[], int size)
 {
-	if (size < 1 || neighbors[path[0]] == nullptr)
-	{
-		return nullptr;
-	}
+    if (size < 1 || !neighbors[path[0]]) return nullptr;
 
-	ChunkNode* node = neighbors[path[0]];
-
-	for (int i = 1; i < size; i++)
-	{
-		if (node->neighbors[path[i]] != nullptr)
-		{
-			node = node->neighbors[path[i]];
-		}
-		else
-		{
-			return nullptr;
-		}
-	}
-
-	return node;
+    ChunkNode *node = neighbors[path[0]];
+    for (int i = 1; i < size; i++)
+    {
+        if (node->neighbors[path[i]])
+            node = node->neighbors[path[i]];
+        else
+            return nullptr;
+    }
+    return node;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Data & geometry generation  (thread-safe, idempotent)
+// ─────────────────────────────────────────────────────────────────────────────
 
 void ChunkNode::generateData()
 {
-	state = DATA;
-	chunk.generate(seed);
+    // Fast path – no lock needed if already done.
+    if (state.load(std::memory_order_acquire) >= DATA) return;
+
+    // Serialize: only one thread runs chunk.generate().
+    std::lock_guard<std::mutex> lock(generationMutex);
+
+    // Double-check after acquiring the lock (another thread may have just
+    // finished between the fast-path check and the lock acquisition).
+    if (state.load(std::memory_order_relaxed) >= DATA) return;
+
+    chunk.generate(seed);
+
+    // Release store: all writes to chunk.data are visible to any thread that
+    // subsequently observes state >= DATA via an acquire load.
+    state.store(DATA, std::memory_order_release);
 }
 
 void ChunkNode::generateGeometry(ChunkWorld *world)
 {
-	if (state < DATA)
-	{
-		generateData();
-	}
+    // Ensure data is ready first.
+    if (state.load(std::memory_order_acquire) < DATA)
+        generateData();
 
-	state = GEOMETRY;
-	geometry->generate(&chunk, world);
+    // Fast path.
+    if (state.load(std::memory_order_acquire) >= GEOMETRY) return;
+
+    // Serialize meshing per node.
+    std::lock_guard<std::mutex> lock(generationMutex);
+
+    // Double-check.
+    if (state.load(std::memory_order_relaxed) >= GEOMETRY) return;
+
+    geometry->generate(&chunk, world);
+
+    state.store(GEOMETRY, std::memory_order_release);
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Cleanup
+// ─────────────────────────────────────────────────────────────────────────────
 
 void ChunkNode::dispose(VkDevice &device)
 {
-	if (state > DATA)
-	{
-		geometry->dispose(device);
-		state = DATA;
-	}
+    if (state.load() > DATA)
+    {
+        geometry->dispose(device);
+        state.store(DATA);
+    }
 
-	for (unsigned int i = 0; i < 6; i++)
-	{
-		if (neighbors[i] != nullptr)
-		{
-			// Null the back-pointer before disposing to prevent use-after-free.
-			// Neighbor directions are paired: LEFT(0)<->RIGHT(1), FRONT(2)<->BACK(3), UP(4)<->DOWN(5)
-			int opposite = i ^ 1;
-			neighbors[i]->neighbors[opposite] = nullptr;
-
-			neighbors[i]->dispose(device);
-			delete neighbors[i];
-			neighbors[i] = nullptr;
-		}
-	}
+    for (unsigned int i = 0; i < 6; i++)
+    {
+        if (neighbors[i])
+        {
+            int opposite = i ^ 1;
+            neighbors[i]->neighbors[opposite] = nullptr;
+            neighbors[i]->dispose(device);
+            delete neighbors[i];
+            neighbors[i] = nullptr;
+        }
+    }
 }
