@@ -119,7 +119,10 @@ void VkCraft::render()
 
 	//Create list of semaphores to wait for and signal to
 	VkSemaphore waitSemaphores[] = { imageAvailableSemaphores[currentFrame] };
-	VkSemaphore signalSemaphores[] = { renderFinishedSemaphores[currentFrame] };
+	// Index by imageIndex (not currentFrame): each swapchain image has its own
+	// renderFinished semaphore so we don't reuse it while the presentation engine
+	// still holds a reference from a previous present of that image.
+	VkSemaphore signalSemaphores[] = { renderFinishedSemaphores[imageIndex] };
 
 	//Wait stages
 	VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
@@ -321,10 +324,13 @@ void VkCraft::cleanup()
 	//World geometries
 	world.dispose(device.logical);
 
-	//Semaphores
-	for (size_t i = 0; i < static_cast<size_t>(CONCURRENT_FRAMES); i++)
+	//Semaphores and fences
+	for (size_t i = 0; i < renderFinishedSemaphores.size(); i++)
 	{
 		vkDestroySemaphore(device.logical, renderFinishedSemaphores[i], nullptr);
+	}
+	for (size_t i = 0; i < static_cast<size_t>(CONCURRENT_FRAMES); i++)
+	{
 		vkDestroySemaphore(device.logical, imageAvailableSemaphores[i], nullptr);
 		vkDestroyFence(device.logical, inFlightFences[i], nullptr);
 	}
@@ -1038,7 +1044,9 @@ void VkCraft::createRenderingCommandBuffers()
 void VkCraft::createSyncObjects()
 {
 	imageAvailableSemaphores.resize(CONCURRENT_FRAMES);
-	renderFinishedSemaphores.resize(CONCURRENT_FRAMES);
+	// One renderFinished semaphore per swapchain image: prevents reusing a semaphore
+	// while the presentation engine still holds a reference from a prior present.
+	renderFinishedSemaphores.resize(swapChainImages.size());
 	inFlightFences.resize(CONCURRENT_FRAMES);
 
 	VkSemaphoreCreateInfo semaphoreInfo = {};
@@ -1051,10 +1059,17 @@ void VkCraft::createSyncObjects()
 	for (size_t i = 0; i < static_cast<size_t>(CONCURRENT_FRAMES); i++)
 	{
 		if (vkCreateSemaphore(device.logical, &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) != VK_SUCCESS ||
-			vkCreateSemaphore(device.logical, &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) != VK_SUCCESS ||
 			vkCreateFence(device.logical, &fenceInfo, nullptr, &inFlightFences[i]) != VK_SUCCESS)
 		{
 			throw std::runtime_error("vkCraft: Failed to create synchronization objects for a frame!");
+		}
+	}
+
+	for (size_t i = 0; i < renderFinishedSemaphores.size(); i++)
+	{
+		if (vkCreateSemaphore(device.logical, &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) != VK_SUCCESS)
+		{
+			throw std::runtime_error("vkCraft: Failed to create render finished semaphore!");
 		}
 	}
 }
