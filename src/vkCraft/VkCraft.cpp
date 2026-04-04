@@ -319,7 +319,7 @@ void VkCraft::cleanup()
 	world.dispose(device.logical);
 
 	//Semaphores
-	for (int i = 0; i < CONCURRENT_FRAMES; i++)
+	for (size_t i = 0; i < static_cast<size_t>(CONCURRENT_FRAMES); i++)
 	{
 		vkDestroySemaphore(device.logical, renderFinishedSemaphores[i], nullptr);
 		vkDestroySemaphore(device.logical, imageAvailableSemaphores[i], nullptr);
@@ -430,7 +430,6 @@ void VkCraft::createSurface()
 void VkCraft::pickPhysicalDevice()
 {
 	uint32_t count = 0;
-	// FIX: call enumerate only twice (once for count, once for data) - original called it 3x
 	if (vkEnumeratePhysicalDevices(instance, &count, nullptr) != VK_SUCCESS || count == 0)
 	{
 		throw std::runtime_error("vkCraft: No GPU with Vulkan support found");
@@ -477,8 +476,8 @@ void VkCraft::createLogicalDevice()
 	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
 	// FIX: use uint32_t to match Vulkan queue family index type (avoids narrowing from uint32_t to int)
 	std::set<uint32_t> uniqueQueueFamilies = {
-		static_cast<uint32_t>(indices.graphicsFamily),
-		static_cast<uint32_t>(indices.presentFamily)
+		indices.graphicsFamily,
+		indices.presentFamily
 	};
 
 	float queuePriority = 1.0f;
@@ -547,8 +546,8 @@ void VkCraft::createSwapChain()
 	createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
 	QueueFamilyIndices indices = device.getQueueFamilyIndices(surface);
-	// FIX: use static_cast instead of C-style cast for type safety
-	uint32_t queueFamilyIndices[] = { static_cast<uint32_t>(indices.graphicsFamily), static_cast<uint32_t>(indices.presentFamily) };
+	// FIX: use uint32_t array directly — no narrowing cast needed
+	uint32_t queueFamilyIndices[] = { indices.graphicsFamily, indices.presentFamily };
 
 	if (indices.graphicsFamily != indices.presentFamily)
 	{
@@ -1039,7 +1038,7 @@ void VkCraft::createSyncObjects()
 	fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 	fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-	for (int i = 0; i < CONCURRENT_FRAMES; i++)
+	for (size_t i = 0; i < static_cast<size_t>(CONCURRENT_FRAMES); i++)
 	{
 		if (vkCreateSemaphore(device.logical, &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) != VK_SUCCESS ||
 			vkCreateSemaphore(device.logical, &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) != VK_SUCCESS ||

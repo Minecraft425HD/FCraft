@@ -106,7 +106,7 @@ public:
 	FirstPersonCamera camera;
 	glm::ivec3 cameraIndex = { 0, 0, 0 };
 	UniformBufferObject uniformBuf;
-	double time, delta;
+	double time = 0.0, delta = 0.0;
 
 	const int WORLD_SEED = 349995;
 	const int RENDER_DISTANCE = 5;
@@ -337,7 +337,7 @@ public:
 	/**
 	 * Chose swap chain presentation mode
 	 */
-	VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR> availablePresentModes);
+	VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
 
 	/**
 	 * Choose resolution of the swap chain images (get it from the window size)
