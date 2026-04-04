@@ -54,12 +54,38 @@ void FirstPersonCamera::update(GLFWwindow *window, double time)
 		position.y -= moveSpeed;
 	}
 
-	double x, y;
-	glfwGetCursorPos(window, &x, &y);
-	delta.x = x - last.x;
-	delta.y = y - last.y;
-	last.x = x;
-	last.y = y;
+	// Only read and apply mouse delta when the window is focused.
+	// This prevents a large snap-back jump when alt-tabbing or
+	// when moving into unloaded chunks causes a brief focus loss.
+	if (glfwGetWindowAttrib(window, GLFW_FOCUSED))
+	{
+		double x, y;
+		glfwGetCursorPos(window, &x, &y);
+
+		if (lastInitialized)
+		{
+			delta.x = x - last.x;
+			delta.y = y - last.y;
+		}
+		else
+		{
+			// First frame: absorb current position without rotating
+			delta.x = 0;
+			delta.y = 0;
+			lastInitialized = true;
+		}
+
+		last.x = x;
+		last.y = y;
+	}
+	else
+	{
+		// Window not focused: zero out delta but do NOT update last.
+		// When focus returns, last still holds the pre-loss position
+		// so the next delta is near zero instead of a large jump.
+		delta.x = 0;
+		delta.y = 0;
+	}
 
 	//Update mouse cursor
 	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
