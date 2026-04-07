@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <random>
 #include "Device.h"
 #include "ChunkWorld.h"
 #include "Chunk.h"
@@ -32,12 +33,12 @@ public:
 	* front is - z, back is + z
 	* up is + y, down is - y
 	*/
-	static const int LEFT = 0;
+	static const int LEFT  = 0;
 	static const int RIGHT = 1;
 	static const int FRONT = 2;
-	static const int BACK = 3;
-	static const int UP = 4;
-	static const int DOWN = 5;
+	static const int BACK  = 3;
+	static const int UP    = 4;
+	static const int DOWN  = 5;
 
 	/**
 	* Chunk data.
@@ -55,7 +56,7 @@ public:
 	int state;
 
 	/**
-	* World seed.
+	* World seed (propagated from ChunkWorld).
 	*/
 	int seed;
 
@@ -76,6 +77,24 @@ public:
 	ChunkNode *neighbors[6] = { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr };
 
 	ChunkNode(glm::ivec3 _index, int _seed);
+
+	/**
+	* Compute a deterministic per-chunk RNG seeded from the world seed and
+	* the chunk's XZ position.  The same world seed + same chunk position
+	* always produces the same terrain, matching Minecraft's behaviour.
+	*
+	* Usage inside generateData():
+	*   std::mt19937 rng = makeChunkRng();
+	*   int height = std::uniform_int_distribution<int>(4, 16)(rng);
+	*/
+	std::mt19937 makeChunkRng() const
+	{
+		uint32_t chunkSeed =
+			static_cast<uint32_t>(seed)
+			^ (static_cast<uint32_t>(index.x) * 1664525u)
+			^ (static_cast<uint32_t>(index.z) * 1013904223u);
+		return std::mt19937(chunkSeed);
+	}
 
 	/**
 	* Get geometries from this node and its neighbors recursively.
@@ -112,6 +131,8 @@ public:
 
 	/**
 	* Generate data for this node.
+	* Use makeChunkRng() for all random decisions to ensure
+	* deterministic, seed-based terrain generation.
 	*/
 	void generateData();
 

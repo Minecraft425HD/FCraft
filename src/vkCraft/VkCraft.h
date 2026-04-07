@@ -34,6 +34,7 @@
 #include "FirstPersonCamera.h"
 #include "ChunkWorld.h"
 #include "ThreadPool.h"
+#include "WorldSettings.h"
 
 #include <thread>
 #include <future>
@@ -113,14 +114,23 @@ public:
 	UniformBufferObject uniformBuf;
 	double time = 0.0, delta = 0.0;
 
-	const int WORLD_SEED      = 349995;
-	const int RENDER_DISTANCE = 5;
-	ChunkWorld world = ChunkWorld(WORLD_SEED);
+	/**
+	 * World seed and render distance.
+	 * Set these BEFORE calling run().
+	 * Default values match the old hard-coded constants so that
+	 * the engine still works if run() is called without a menu.
+	 */
+	int worldSeed      = 349995;
+	int renderDistance = 5;
+
+	// ChunkWorld is initialised inside initialize() using worldSeed
+	// so that the value set by main.cpp is respected.
+	ChunkWorld* world = nullptr;
 
 	/**
 	 * Worker thread pool for parallel chunk-data and geometry generation.
 	 * Initialised in initialize() once hardware_concurrency is known.
-	 * GPU uploads are never submitted here – only CPU-side work.
+	 * GPU uploads are never submitted here -- only CPU-side work.
 	 */
 	std::unique_ptr<ThreadPool> threadPool;
 
