@@ -10,6 +10,9 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 find_package(Threads REQUIRED)
 find_package(glfw3 REQUIRED)
 find_package(Vulkan REQUIRED)
+# The main-menu screen (MenuRenderer) draws with legacy OpenGL before Vulkan
+# takes over, so the executable needs to link against OpenGL too.
+find_package(OpenGL REQUIRED)
 
 # Auto-download stb_image.h (header-only, no build needed)
 include(FetchContent)
@@ -111,6 +114,7 @@ target_link_libraries(vkCraft
     glfw
     ${TINYOBJ_LINK}
     ${Vulkan_LIBRARIES}
+    OpenGL::GL
     Threads::Threads
 )
 
@@ -118,6 +122,7 @@ target_link_libraries(libvkCraft
     glfw
     ${TINYOBJ_LINK}
     ${Vulkan_LIBRARIES}
+    OpenGL::GL
     Threads::Threads
 )
 

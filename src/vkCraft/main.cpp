@@ -37,10 +37,11 @@ int main()
     }
 
     WorldSettings ws = menu.settings;
+    bool quitRequested = glfwWindowShouldClose(menuWin);
     glfwDestroyWindow(menuWin);
     // Do NOT call glfwTerminate -- VkCraft needs GLFW.
 
-    if (glfwWindowShouldClose(menuWin)) {
+    if (quitRequested) {
         glfwTerminate();
         return EXIT_SUCCESS;
     }
