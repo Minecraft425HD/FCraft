@@ -258,7 +258,10 @@ private:
         glBegin(GL_QUADS);
         for (int row = 0; row < 8; row++)
             for (int col = 0; col < 8; col++)
-                if (bmp[row] & (0x80 >> col)) {
+                // bit 0 (0x01) of each row byte is the glyph's LEFTMOST pixel in
+                // this font table, so column 'col' reads bit (1 << col) -- using
+                // (0x80 >> col) here mirrored every character horizontally.
+                if (bmp[row] & (0x01 << col)) {
                     float x0 = px + col * s, y0 = py + row * s;
                     glVertex2f(x0,   y0);   glVertex2f(x0+s, y0);
                     glVertex2f(x0+s, y0+s); glVertex2f(x0,   y0+s);
