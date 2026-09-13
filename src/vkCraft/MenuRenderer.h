@@ -188,9 +188,17 @@ public:
     // -----------------------------------------------------------------------
     void renderFrame()
     {
+        // The GL viewport must cover the real framebuffer (2x the window size
+        // on a Retina display), but all 2-D layout below -- and the button
+        // hit-testing against mx/my -- has to stay in the same window/point
+        // coordinates GLFW reports for the cursor, or every click misses on
+        // HiDPI screens.
+        int fbW, fbH;
+        glfwGetFramebufferSize(window, &fbW, &fbH);
+        glViewport(0, 0, fbW, fbH);
+
         int W, H;
-        glfwGetFramebufferSize(window, &W, &H);
-        glViewport(0, 0, W, H);
+        glfwGetWindowSize(window, &W, &H);
 
         switch (state) {
             case MenuState::MAIN:         drawMain(W,H);        break;

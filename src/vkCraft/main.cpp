@@ -17,7 +17,7 @@ int main()
     glfwWindowHint(GLFW_CLIENT_API,        GLFW_OPENGL_API);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
-    glfwWindowHint(GLFW_RESIZABLE,         GLFW_FALSE);
+    glfwWindowHint(GLFW_RESIZABLE,         GLFW_TRUE);
 
     GLFWwindow* menuWin = glfwCreateWindow(854, 480, "FCraft", nullptr, nullptr);
     if (!menuWin) {
