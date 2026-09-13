@@ -64,7 +64,7 @@ public:
      * Still used by the old update path; the new multithreaded path calls
      * collectNodes() + getBlock() separately.
      */
-    std::vector<Geometry*> getGeometries(glm::vec3 position, int distance);
+    std::vector<Geometry*> getGeometries(glm::vec3 position, int horizontalDistance, int verticalDistance);
 
     /**
      * Navigate the graph and return the node at @p index.
@@ -79,7 +79,7 @@ public:
      * the graph).  Newly created nodes are registered in the registry.
      * Call from the main thread.
      */
-    std::vector<ChunkNode*> collectNodes(glm::vec3 position, int distance);
+    std::vector<ChunkNode*> collectNodes(glm::vec3 position, int horizontalDistance, int verticalDistance);
 
     /**
      * Thread-safe block lookup used by ChunkGeometry during meshing.

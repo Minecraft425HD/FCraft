@@ -44,16 +44,13 @@ void Chunk::generate(int seed)
 	}
 }
 
-int Chunk::getHeight(int x, int y, int seed, double noiseScale)
+double Chunk::fbm(double x, double y, int seed, double zoom, int octaves)
 {
 	double frequencyPower = 2.0;
 	double amplitudePower = 0.5;
 
-	double zoom = noiseScale;
 	double noise = 0;
 	double amplitudeSum = 0;
-
-	int octaves = 6;
 
 	//Loop through the octaves
 	for (int a = 0; a < octaves; a++)
@@ -66,19 +63,47 @@ int Chunk::getHeight(int x, int y, int seed, double noiseScale)
 		amplitudeSum += amplitude;
 
 		//Perlin noise functions. It calculates all our zoom and frequency and amplitude
-		noise += getNoise(((double)x) * frequency / zoom, ((double)y) / zoom * frequency, seed) * amplitude;
+		noise += getNoise(x * frequency / zoom, y * frequency / zoom, seed) * amplitude;
 	}
 
 	// Normalize back to roughly [-1, 1] -- without this the summed octaves can
-	// overshoot that range (up to ~1.97 with 6 octaves at 0.5 falloff), which
-	// made peaks far taller than maxHeight and let some columns go negative
-	// (i.e. no land at all above water level).
-	noise /= amplitudeSum;
+	// overshoot that range (up to ~1.97 with 6 octaves at 0.5 falloff).
+	return noise / amplitudeSum;
+}
 
-	double maxHeight = 32 * 4.0;
-	double minHeight = 0.0;
+int Chunk::getHeight(int x, int y, int seed, double noiseScale)
+{
+	// Rolling hills everywhere: moderate-frequency noise with a modest
+	// amplitude, so most of the world is gentle, walkable terrain.
+	double hills = fbm((double)x, (double)y, seed, noiseScale, 4);
 
-	return (int)(((noise + 1) / 2.0) * (maxHeight - minHeight));
+	// Where mountain RANGES go: a second, much lower-frequency noise field.
+	// Empirically (see terrain_test4 in the session scratchpad) this field's
+	// value across a large area sits below ~0.31 about 85% of the time and
+	// below ~0.62 about 99% of the time, so ramping from 0.3 to 0.75 turns
+	// roughly the top 10-15% of the map into mountain range, the rest
+	// staying flat hills, with a smooth (not hard-edged) transition since
+	// it's a ramp over continuous noise rather than a threshold cutoff.
+	double mask = fbm((double)x, (double)y, seed + 101, noiseScale * 5.0, 3);
+	mask = (mask - 0.3) / (0.75 - 0.3);
+	mask = mask < 0.0 ? 0.0 : (mask > 1.0 ? 1.0 : mask);
+	mask = mask * mask;
+
+	// Sharper detail noise, only expressed where the mask says "mountain".
+	// Folded to its absolute value (ridge noise) so mountains only add
+	// jagged peaks instead of sometimes carving the range into a canyon.
+	double detail = fbm((double)x, (double)y, seed + 202, noiseScale * 0.5, 5);
+	double ridge = detail < 0.0 ? -detail : detail;
+
+	double baseElevation     = 24.0;
+	double hillAmplitude     = 10.0;
+	double mountainAmplitude = 160.0;
+
+	double height = baseElevation
+	              + hills * hillAmplitude
+	              + mask * ridge * mountainAmplitude;
+
+	return (int)height;
 }
 
 double Chunk::interpolate(double a, double b, double x)
@@ -118,7 +143,10 @@ double Chunk::findNoise(double x, double z, int seed)
 	n += seed;
 	n = (n << 13) ^ n;
 
-	unsigned int nn = (n * (n * n * 60493 + 19990303) + 1376312589);
+	// Masked to 31 bits so nn stays in [0, 2^31) -- without it the unsigned
+	// int wrapped over the full 32-bit range, making this function return
+	// values as low as -3 instead of the intended (-1, 1].
+	unsigned int nn = (n * (n * n * 60493 + 19990303) + 1376312589) & 0x7fffffff;
 
 	return 1.0 - ((double)nn / 1073741824.0);
 }

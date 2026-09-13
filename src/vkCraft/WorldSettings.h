@@ -11,7 +11,7 @@ struct WorldSettings
 {
     std::string worldName      = "New World";
     uint32_t    seed           = 0;      // 0 = auto-random
-    int         renderDistance = 8;
+    int         renderDistance = 4;
     float       mouseSensitivity = 1.0f;
     bool        fullscreen     = false;
     int         fovDegrees     = 70;

@@ -71,72 +71,98 @@ void VkCraft::update()
 
 	glm::ivec3 index = world->getIndex(camera.position);
 
-	if (index != cameraIndex)
+	// True the frame the camera crosses into a new chunk -- forces a
+	// world->geometries refresh below even if nothing new finished
+	// generating this exact frame, so chunks that just fell out of range
+	// stop being drawn right away instead of lingering until the next
+	// chunk happens to finish loading.
+	bool worldChanged = index != cameraIndex;
+
+	if (worldChanged)
 	{
-		double t = glfwGetTime();
-
-		// ── Step 1: graph traversal (main thread, fast) ──────────────────────
-		// Build the full neighbour graph for the render distance and register
-		// every node in world's flat registry so worker threads can look them
-		// up via world->getBlock() without graph traversal.
-		std::vector<ChunkNode*> chunkNodes = world->collectNodes(camera.position, renderDistance);
-
-		// ── Step 2: parallel DATA generation ────────────────────────────────
-		// Each ChunkNode owns its own chunk.data – no shared writes.
-		// generateData() is idempotent (atomic CAS guards double-execution).
-		{
-			std::vector<std::future<void>> futures;
-			futures.reserve(chunkNodes.size());
-
-			for (ChunkNode *node : chunkNodes)
-			{
-				if (node->state.load() < ChunkNode::DATA)
-				{
-					futures.push_back(threadPool->enqueue([node]() {
-						node->generateData();
-					}));
-				}
-			}
-			// Wait for all data to be ready before meshing.
-			for (auto &f : futures) f.get();
-		}
-
-		// ── Step 3: parallel GEOMETRY generation ────────────────────────────
-		// All nodes now have DATA. generateGeometry() calls world->getBlock()
-		// which is thread-safe (reads from registry with a mutex).
-		// generateGeometry() is also idempotent (mutex + atomic state guard).
-		{
-			std::vector<std::future<void>> futures;
-			futures.reserve(chunkNodes.size());
-
-			for (ChunkNode *node : chunkNodes)
-			{
-				if (node->state.load() < ChunkNode::GEOMETRY)
-				{
-					futures.push_back(threadPool->enqueue([node, this]() {
-						node->generateGeometry(world);
-					}));
-				}
-			}
-			for (auto &f : futures) f.get();
-		}
-
-		// ── Step 4: GPU upload (main thread only) ────────────────────────────
-		// Vulkan buffer creation must happen on the thread that owns the device.
-		world->geometries.clear();
-		for (ChunkNode *node : chunkNodes)
-		{
-			createGeometryBuffers(node->geometry);
-			world->geometries.push_back(node->geometry);
-		}
-
-		std::cout << "VkCraft: Loaded " << chunkNodes.size() << " chunks in "
-		          << (glfwGetTime() - t) << "s  ("
-		          << threadPool->threadCount() << " worker threads)\n";
-
-		// ── Step 5: Rebuild draw commands ────────────────────────────────────
-		recreateRenderingCommandBuffers();
+		// Cheap graph traversal only (creates/looks up ChunkNode objects and
+		// registers them) -- generation itself is streamed in below, spread
+		// across frames, so this never blocks the render loop.
+		pendingChunks = world->collectNodes(camera.position, renderDistance, verticalRenderDistance);
 		cameraIndex = index;
+	}
+
+	// ── Incremental, non-blocking world streaming ──────────────────────────
+	// Each pending node advances at most one stage this frame: request its
+	// data, then (once its data and every neighbour's data are ready)
+	// request its geometry, then upload it to the GPU. Generation runs on
+	// the thread pool without ever being waited on here, so however many
+	// chunks are still outstanding, the frame never stalls for them --
+	// what's ready gets shown, the rest catches up over the next frames.
+
+	for (ChunkNode *node : pendingChunks)
+	{
+		if (node->state.load() < ChunkNode::DATA)
+		{
+			if (!node->dataDispatched)
+			{
+				node->dataDispatched = true;
+				threadPool->enqueue([node]() { node->generateData(); });
+			}
+			continue;
+		}
+
+		if (node->state.load() < ChunkNode::GEOMETRY)
+		{
+			if (!node->geometryDispatched)
+			{
+				// generateGeometry() needs every neighbour's data for correct
+				// cross-chunk face culling. Neighbour objects always exist
+				// (collectNodes()/getNodes() created them while traversing),
+				// even for ones just outside the loaded set, so opportunistically
+				// dispatch their data too -- this guarantees the dependency is
+				// eventually satisfied instead of stalling forever at the edge
+				// of the loaded region.
+				bool neighborsReady = true;
+				for (int i = 0; i < 6; i++)
+				{
+					ChunkNode *neighbor = node->neighbors[i];
+					if (neighbor->state.load() < ChunkNode::DATA)
+					{
+						if (!neighbor->dataDispatched)
+						{
+							neighbor->dataDispatched = true;
+							threadPool->enqueue([neighbor]() { neighbor->generateData(); });
+						}
+						neighborsReady = false;
+					}
+				}
+
+				if (neighborsReady)
+				{
+					node->geometryDispatched = true;
+					threadPool->enqueue([node, this]() { node->generateGeometry(world); });
+				}
+			}
+			continue;
+		}
+
+		// state >= GEOMETRY: upload to the GPU (main thread only -- Vulkan
+		// buffer creation must happen on the thread that owns the device).
+		// Guarded by uploadAttempted rather than geometry->hasBuffers() so an
+		// empty chunk (no exposed faces, nothing to upload) is only tried
+		// once instead of every frame forever.
+		if (!node->uploadAttempted)
+		{
+			node->uploadAttempted = true;
+			createGeometryBuffers(node->geometry);
+			worldChanged = true;
+		}
+	}
+
+	if (worldChanged)
+	{
+		world->geometries.clear();
+		for (ChunkNode *node : pendingChunks)
+			if (node->state.load() >= ChunkNode::GEOMETRY)
+				world->geometries.push_back(node->geometry);
+
+		recreateRenderingCommandBuffers();
 	}
 
 	//Update UBO

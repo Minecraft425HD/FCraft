@@ -423,8 +423,11 @@ private:
         // Render distance
         std::string rd = "Sichtweite: " + std::to_string(settings.renderDistance);
         if (button(rd,  bx, by, bw, 36)) {}
-        if (button("-", bx,          by+40, hw, 32)) settings.renderDistance = std::max(1,  settings.renderDistance-1);
-        if (button("+", bx+hw+4,     by+40, hw, 32)) settings.renderDistance = std::min(32, settings.renderDistance+1);
+        // Capped at 6 (not 32): each chunk here is 32^3 blocks and the loader
+        // widens in a disk around the player, so a much higher render distance
+        // balloons into thousands of chunks generating at once.
+        if (button("-", bx,          by+40, hw, 32)) settings.renderDistance = std::max(1, settings.renderDistance-1);
+        if (button("+", bx+hw+4,     by+40, hw, 32)) settings.renderDistance = std::min(6, settings.renderDistance+1);
 
         // FOV
         std::string fov = "Sichtfeld: " + std::to_string(settings.fovDegrees);

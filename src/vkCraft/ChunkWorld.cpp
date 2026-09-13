@@ -76,12 +76,12 @@ ChunkNode* ChunkWorld::getChunkNode(glm::ivec3 index)
 // Node collection  (main-thread)
 // ─────────────────────────────────────────────────────────────────────────────
 
-std::vector<ChunkNode*> ChunkWorld::collectNodes(glm::vec3 position, int distance)
+std::vector<ChunkNode*> ChunkWorld::collectNodes(glm::vec3 position, int horizontalDistance, int verticalDistance)
 {
     ChunkNode *center = getChunkNode(getIndex(position));
 
     std::vector<ChunkNode*> result;
-    center->getNodes(&result, distance);
+    center->getNodes(&result, horizontalDistance, verticalDistance);
 
     // Register any newly created nodes so worker threads can find them.
     for (ChunkNode *n : result)
@@ -125,12 +125,12 @@ int ChunkWorld::getBlock(glm::ivec3 position)
 // Legacy synchronous path (still used internally by getGeometries)
 // ─────────────────────────────────────────────────────────────────────────────
 
-std::vector<Geometry*> ChunkWorld::getGeometries(glm::vec3 position, int distance)
+std::vector<Geometry*> ChunkWorld::getGeometries(glm::vec3 position, int horizontalDistance, int verticalDistance)
 {
     ChunkNode *center = getChunkNode(getIndex(position));
 
     nodes.clear();
-    center->getNodes(&nodes, distance);
+    center->getNodes(&nodes, horizontalDistance, verticalDistance);
 
     for (ChunkNode *n : nodes)
     {

@@ -72,6 +72,13 @@ public:
 	int getHeight(int x, int y, int seed, double noiseScale = 150);
 
 	/**
+	 * Normalized fractal Brownian motion: sums several octaves of noise
+	 * and divides by their total amplitude so the result stays in
+	 * roughly [-1, 1] regardless of octave count.
+	 */
+	double fbm(double x, double y, int seed, double zoom, int octaves);
+
+	/**
 	 * Interpolate values.
 	 */
 	double interpolate(double a, double b, double x);

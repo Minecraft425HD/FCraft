@@ -50,6 +50,17 @@ public:
     glm::ivec3 index;
     int        timestamp = -1;
 
+    /**
+     * Main-thread-only bookkeeping for the incremental (non-blocking) chunk
+     * streaming in VkCraft::update(): tracks whether this node's data/
+     * geometry generation, or its GPU upload, has already been dispatched
+     * so it's only requested once while it works its way through the
+     * thread pool.
+     */
+    bool dataDispatched     = false;
+    bool geometryDispatched = false;
+    bool uploadAttempted    = false;
+
     /** Pointers to the six direct neighbours (null until generated). */
     ChunkNode *neighbors[6] = { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr };
 
@@ -57,7 +68,14 @@ public:
     ChunkNode(glm::ivec3 _index, int _seed);
 
     // ── Graph traversal ───────────────────────────────────────────────────────
-    void getNodes(std::vector<ChunkNode*> *nodes, int recursive = 0);
+    /**
+     * Collect all nodes reachable within @p horizontalDistance steps
+     * left/right/front/back and @p verticalDistance steps up/down. Kept
+     * separate so a wide view distance doesn't also load dozens of empty
+     * sky/deep-underground chunks -- the vertical band only needs to cover
+     * the terrain's actual height range.
+     */
+    void getNodes(std::vector<ChunkNode*> *nodes, int horizontalDistance, int verticalDistance);
     void getGeometries(std::vector<Geometry*> *geometries, ChunkWorld *world, int recursive = 0);
 
     // ── Neighbour management ──────────────────────────────────────────────────

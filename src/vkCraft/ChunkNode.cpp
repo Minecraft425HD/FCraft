@@ -15,7 +15,7 @@ ChunkNode::ChunkNode(glm::ivec3 _index, int _seed)
 // Graph traversal
 // ─────────────────────────────────────────────────────────────────────────────
 
-void ChunkNode::getNodes(std::vector<ChunkNode*> *nodes, int recursive)
+void ChunkNode::getNodes(std::vector<ChunkNode*> *nodes, int horizontalDistance, int verticalDistance)
 {
     bool found = false;
     for (size_t i = 0; i < nodes->size(); i++)
@@ -26,11 +26,24 @@ void ChunkNode::getNodes(std::vector<ChunkNode*> *nodes, int recursive)
     if (!found)
         nodes->push_back(this);
 
-    if (recursive > 0)
+    if (horizontalDistance > 0 || verticalDistance > 0)
     {
         generateNeighbors();
-        for (unsigned int i = 0; i < 6; i++)
-            neighbors[i]->getNodes(nodes, recursive - 1);
+
+        // LEFT/RIGHT/FRONT/BACK spend the horizontal budget; UP/DOWN spend
+        // the (separate) vertical budget.
+        if (horizontalDistance > 0)
+        {
+            neighbors[LEFT] ->getNodes(nodes, horizontalDistance - 1, verticalDistance);
+            neighbors[RIGHT]->getNodes(nodes, horizontalDistance - 1, verticalDistance);
+            neighbors[FRONT]->getNodes(nodes, horizontalDistance - 1, verticalDistance);
+            neighbors[BACK] ->getNodes(nodes, horizontalDistance - 1, verticalDistance);
+        }
+        if (verticalDistance > 0)
+        {
+            neighbors[UP]  ->getNodes(nodes, horizontalDistance, verticalDistance - 1);
+            neighbors[DOWN]->getNodes(nodes, horizontalDistance, verticalDistance - 1);
+        }
     }
 }
 

@@ -129,7 +129,28 @@ public:
 	 * the engine still works if run() is called without a menu.
 	 */
 	int worldSeed      = 349995;
-	int renderDistance = 5;
+	int renderDistance = 4;
+
+	/**
+	 * Vertical (up/down) load radius, in chunks, kept independent from
+	 * (and much smaller than) the horizontal renderDistance above. The
+	 * world only needs enough vertical range to cover the terrain's
+	 * actual height band, not a full sphere -- otherwise a horizontal
+	 * render distance of just a few chunks balloons into many hundreds
+	 * of chunks once every chunk also loads that many empty-sky/deep-
+	 * underground neighbours above and below.
+	 */
+	int verticalRenderDistance = 2;
+
+	/**
+	 * The chunk nodes that should be loaded/visible around the camera's
+	 * current chunk. Recomputed (cheap graph traversal only) whenever the
+	 * camera enters a new chunk; the actual data/geometry generation and
+	 * GPU upload for its members is then streamed in incrementally, a
+	 * little each frame, in update() -- see the dispatch* flags on
+	 * ChunkNode.
+	 */
+	std::vector<ChunkNode*> pendingChunks;
 
 	// ChunkWorld is initialised inside initialize() using worldSeed
 	// so that the value set by main.cpp is respected.
