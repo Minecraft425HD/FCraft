@@ -28,8 +28,9 @@ main.cpp
 | Shift | Sprint (3× speed) |
 | Space | Fly up |
 | C | Fly down |
-| Left Mouse + Drag | Mouse look |
+| Mouse | Look (cursor is captured) |
 | Arrow Keys | Keyboard look |
+| Esc | Release/re-capture the mouse cursor |
 
 ## Dependencies
 

@@ -52,6 +52,16 @@ void VkCraft::update()
 	delta = actual - time;
 	time = actual;
 
+	//ESC releases/re-captures the mouse cursor (no in-game pause menu yet)
+	bool escDown = glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS;
+	if (escDown && !escWasDown)
+	{
+		cursorLocked = !cursorLocked;
+		glfwSetInputMode(window, GLFW_CURSOR, cursorLocked ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
+		camera.lastInitialized = false; // avoid a look-jump when re-capturing
+	}
+	escWasDown = escDown;
+
 	//Model matrix
 	model.updateMatrix();
 
@@ -225,6 +235,11 @@ void VkCraft::initialize()
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 	glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 	window = glfwCreateWindow(1024, 600, "VkCraft", nullptr, nullptr);
+
+	// Capture the cursor for FPS-style mouse look (locked to the window,
+	// hidden, and reporting unbounded relative motion instead of clamping
+	// at the screen edge).
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
 	//Create instance
 	createInstance();

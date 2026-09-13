@@ -51,6 +51,7 @@ int Chunk::getHeight(int x, int y, int seed, double noiseScale)
 
 	double zoom = noiseScale;
 	double noise = 0;
+	double amplitudeSum = 0;
 
 	int octaves = 6;
 
@@ -62,10 +63,17 @@ int Chunk::getHeight(int x, int y, int seed, double noiseScale)
 
 		//Decrease the amplitude with every loop of the octave.
 		double amplitude = pow(amplitudePower, a);
+		amplitudeSum += amplitude;
 
 		//Perlin noise functions. It calculates all our zoom and frequency and amplitude
 		noise += getNoise(((double)x) * frequency / zoom, ((double)y) / zoom * frequency, seed) * amplitude;
 	}
+
+	// Normalize back to roughly [-1, 1] -- without this the summed octaves can
+	// overshoot that range (up to ~1.97 with 6 octaves at 0.5 falloff), which
+	// made peaks far taller than maxHeight and let some columns go negative
+	// (i.e. no land at all above water level).
+	noise /= amplitudeSum;
 
 	double maxHeight = 32 * 4.0;
 	double minHeight = 0.0;

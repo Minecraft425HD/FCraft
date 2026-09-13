@@ -67,12 +67,10 @@ void FirstPersonCamera::update(GLFWwindow *window, double time)
 	last.x = x;
 	last.y = y;
 
-	//Update mouse cursor
-	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
-	{
-		orientation.x -= delta.x * lookSpeed;
-		orientation.y -= delta.y * lookSpeed;
-	}
+	//Mouse look: the cursor is captured (GLFW_CURSOR_DISABLED), so any
+	//mouse motion steers the camera directly, Minecraft-style.
+	orientation.x -= delta.x * lookSpeed;
+	orientation.y -= delta.y * lookSpeed;
 
 	//Camera orientation
 	if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)

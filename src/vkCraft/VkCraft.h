@@ -115,6 +115,14 @@ public:
 	double time = 0.0, delta = 0.0;
 
 	/**
+	 * ESC toggles the mouse cursor between captured (mouse-look) and free
+	 * (so the player isn't trapped with a hidden cursor). There is no
+	 * in-game pause menu yet -- this only releases the mouse.
+	 */
+	bool cursorLocked = true;
+	bool escWasDown = false;
+
+	/**
 	 * World seed and render distance.
 	 * Set these BEFORE calling run().
 	 * Default values match the old hard-coded constants so that
